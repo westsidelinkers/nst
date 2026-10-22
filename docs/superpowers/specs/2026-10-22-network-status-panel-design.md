@@ -101,8 +101,7 @@ waybar's `custom/*` module can render text, icons, tooltips, and click actions, 
 - Language: Python 3.14 (host interpreter)
 - UI toolkit: GTK4 4.22 + libadwaita 1.9
 - Layer-shell: gtk4-layer-shell 1.3.0 (wlr-layer-shell protocol, Sway/wlroots compatible)
-- Rendering: Cairo via Gtk.DrawingArea (python3-cairo 1.28.0, already a dependency of python3-gobject)
-- Config: TOML (~/.config/nst/config.toml)
+- Rendering: Cairo via Gtk.DrawingArea (python3-cairo 1.28.0, already a dependency of python3-gobject) for panel sparklines, bars, and static elements. OpenGL via GtkGLArea or GskShader for the optional ambient starfield layer (Mesa 26.0.3, Intel iris driver, OpenGL 4.6, accelerated) — Cairo CPU rendering at 60 fps on 1366×768 is unsuitable (~0.5–1.3 W). Vulkan is a viable alternative (Intel ANV ICD present) but unverified at runtime (vulkaninfo not installed). Software fallback: llvmpipe (swrast).- Config: TOML (~/.config/nst/config.toml)
 - State: ~/.local/state/nst/ (XDG state dir, survives OS upgrades)
 - Cache: ~/.local/cache/nst/ (XDG cache dir)
 - Installation: `rpm-ostree install -yA gtk4-layer-shell` (live-applies, no reboot, persists across upgrades/rebases)
@@ -260,6 +259,23 @@ The following are intentionally left to the builder's judgment:
 | Bufferbloat LAN (ms) | ≤ 10 | 10–30 | > 30 | +39.9 ms |
 | Bufferbloat WAN (ms) | ≤ 5 | 5–15 | > 15 | +0.4 ms |
 | Battery health | ≥ 80% | 70–80% | < 70% | 73.97% (1076 cycles) |
+
+## Appendix D: GPU capabilities (verified)
+
+| Item | Value |
+|---|---|
+| GPU | Intel HD Graphics 620 (Kaby Lake GT2, PCI 8086:5916, i915 driver) |
+| Mesa | 26.0.3-4.fc44 (iris DRI driver) |
+| OpenGL | 4.6 Core Profile (Mesa 26.0.3), GLES 3.2, accelerated=yes, ~7.8 GB unified memory |
+| Vulkan loader | 1.4.341.0-1.fc44, Intel ANV ICD (libvulkan_intel.so) present, LVP software fallback |
+| Software renderer | llvmpipe (swrast_dri.so, libgallium) |
+| RC6 residency | Enabled, accumulating (GPU idles well) |
+| Sway | 1.11 (wlroots 0.19.3) |
+| glxinfo | Available (/usr/bin/glxinfo) |
+| vulkaninfo | NOT installed |
+| gtk4-demo | NOT installed |
+
+**Rendering verdict:** OpenGL via Mesa (iris) is the primary strategy for the ambient starfield layer. Vulkan is a plausible alternative but needs runtime verification. Cairo CPU is unsuitable for full-screen 60 fps (~0.5–1.3 W on this hardware).
 
 ## Appendix B: Verified package versions (Fedora 44)
 
