@@ -51,11 +51,22 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
 - TOML config, systemd user unit autostart
 - rpm-ostree for layering gtk4-layer-shell (no reboot for additions)
 
+## Install
+
+```sh
+./install.sh
+```
+
+This installs `~/.local/bin/nst`, creates `~/.config/nst/config.toml`, and
+enables/starts the `nst.service` systemd user unit. The unit is bound to
+`sway-session.target` (`PartOf=`), so it stops when Sway exits and starts
+again on the next session; `Restart=always` restarts it if it crashes.
+
 ## Notes
 
-- **Layer shell runtime:** `gtk4-layer-shell` 1.3.0 must be installed on the host and the
-  app must run with the host Python/GTK stack. This container only ships the GTK3
-  layer-shell library, so layer-shell features are unavailable here.
+- **Layer shell runtime:** `gtk4-layer-shell` 1.3.0 is installed on the host and
+  the app runs with the host Python/GTK stack. Run it through the `nst`
+  launcher (`~/.local/bin/nst`), which points `PYTHONPATH` at the source tree.
 
 - Signal strength thresholds: the UI marks signal as good at >= -67 dBm and warn at
   >= -75 dBm, while the verdict engine treats only < -75 dBm as radio-degraded
@@ -78,12 +89,20 @@ nst/
 ├── tests/
 ├── pyproject.toml
 ├── config.toml.example
+├── CHANGELOG.md
 └── README.md
 ```
 
 ## Status
 
-**Design complete.** Implementation plan written (14 tasks, TDD). Not yet implemented.
+**v1.0.0 — v1 feature freeze.** The core panel, addons, live trend graph,
+data-driven bars, and systemd autostart are complete. Further
+customizations are reserved for **v1.5**.
+
+## Versioning
+
+- **v1.0.0** — frozen v1 feature set.
+- **v1.5** — future customizations; not part of v1.
 
 ## License
 

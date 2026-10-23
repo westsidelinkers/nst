@@ -6,6 +6,10 @@ def test_generate_systemd_unit():
     assert "WantedBy=sway-session.target" in unit
     assert "ExecStartPre=" in unit
     assert "swaymsg -t get_outputs" in unit
+    assert "PartOf=sway-session.target" in unit
+    assert "Restart=always" in unit
+    assert "StartLimitIntervalSec=0" in unit
+    assert "TimeoutStartSec=90" in unit
 
 def test_generate_sway_exec():
     exec_line = generate_sway_exec("/home/user/.local/bin/nst")

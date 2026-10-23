@@ -11,13 +11,16 @@ from typing import Any
 _SYSTEMD_UNIT_TEMPLATE = """[Unit]
 Description=Network Status Tool
 After=sway-session.target
-Wants=sway-session.target
+PartOf=sway-session.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 ExecStartPre=/bin/sh -c 'until swaymsg -t get_outputs >/dev/null 2>&1; do sleep 0.5; done'
-ExecStart={binary_path} {config_path}
-Restart=on-failure
+TimeoutStartSec=90
+TimeoutStopSec=10
+ExecStart={binary_path}
+Restart=always
 RestartSec=5
 
 [Install]
@@ -76,11 +79,13 @@ def install(config: Any = None) -> None:
         except OSError:
             pass
 
-    # Install a launcher script. Prefer an existing installed entry point if
-    # available; otherwise wrap `python -m nst`.
+    # Install a launcher script. The package is not necessarily pip-installed,
+    # so point PYTHONPATH at this package's source tree.
     python = shutil.which("python3") or shutil.which("python") or "python3"
+    src_dir = Path(__file__).resolve().parents[1]
     launcher = (
         "#!/bin/sh\n"
+        f'export PYTHONPATH="{src_dir}${{PYTHONPATH:+:$PYTHONPATH}}"\n'
         f'exec {python} -m nst "{config_path}" "$@"\n'
     )
     binary_path.write_text(launcher, encoding="utf-8")
@@ -104,15 +109,16 @@ def install(config: Any = None) -> None:
         )
     except FileNotFoundError:
         pass
-    try:
-        subprocess.run(
-            ["systemctl", "--user", "enable", "--now", "nst.service"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-    except FileNotFoundError:
-        pass
+    for action in ("enable", "restart"):
+        try:
+            subprocess.run(
+                ["systemctl", "--user", action, "nst.service"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            pass
 
     # Also drop a sway exec snippet for convenience.
     try:

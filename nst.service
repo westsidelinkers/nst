@@ -1,13 +1,16 @@
 [Unit]
 Description=Network Status Tool
 After=sway-session.target
-Wants=sway-session.target
+PartOf=sway-session.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 ExecStartPre=/bin/sh -c 'until swaymsg -t get_outputs >/dev/null 2>&1; do sleep 0.5; done'
-ExecStart=%h/.local/bin/nst %h/.config/nst/config.toml
-Restart=on-failure
+TimeoutStartSec=90
+TimeoutStopSec=10
+ExecStart=%h/.local/bin/nst
+Restart=always
 RestartSec=5
 
 [Install]

@@ -15,7 +15,10 @@ def main(argv=None) -> int:
         argv = sys.argv
     config_path = argv[1] if len(argv) > 1 else None
     app = NstApplication(config_path=config_path)
-    return app.run(argv)
+    # The config path is consumed here. Pass only the program name to GTK:
+    # Gtk.Application treats remaining arguments as files to open and aborts
+    # with "This application can not open files." otherwise.
+    return app.run(argv[:1])
 
 
 if __name__ == "__main__":

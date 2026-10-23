@@ -3,6 +3,8 @@ set -euo pipefail
 
 # Install nst to ~/.local/bin and enable the systemd user unit.
 
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 PYTHON="${PYTHON:-python3}"
 HOME_DIR="${HOME}"
 BIN_DIR="${HOME_DIR}/.local/bin"
@@ -11,9 +13,10 @@ SYSTEMD_DIR="${HOME_DIR}/.config/systemd/user"
 
 mkdir -p "${BIN_DIR}" "${CONFIG_DIR}" "${SYSTEMD_DIR}"
 
-# Copy the package source into a user site location if not already importable.
-if ! "${PYTHON}" -c "import nst" >/dev/null 2>&1; then
-    echo "Warning: 'nst' package not importable; install it first (pip install --user .)" >&2
+# Verify the source tree is importable with the selected interpreter.
+if ! PYTHONPATH="${REPO_DIR}/src" "${PYTHON}" -c "import nst" >/dev/null 2>&1; then
+    echo "Error: ${REPO_DIR}/src is not importable with ${PYTHON}" >&2
+    exit 1
 fi
 
 # Ensure a default config exists.
@@ -37,19 +40,37 @@ enabled = ["throughput", "latency", "bufferbloat", "signal", "battery", "cpu", "
 TOML
 fi
 
-# Install launcher.
+# Install launcher. The package is not pip-installed, so point PYTHONPATH at
+# the source tree in this repository.
 cat > "${BIN_DIR}/nst" <<LAUNCHER
 #!/bin/sh
+export PYTHONPATH="${REPO_DIR}/src\${PYTHONPATH:+:\$PYTHONPATH}"
 exec ${PYTHON} -m nst "${CONFIG_DIR}/config.toml" "\$@"
 LAUNCHER
 chmod +x "${BIN_DIR}/nst"
 
 # Install systemd user unit.
-sed -e "s#%h/.local/bin/nst#${BIN_DIR}/nst#g" \
-    -e "s#%h/.config/nst/config.toml#${CONFIG_DIR}/config.toml#g" \
-    nst.service > "${SYSTEMD_DIR}/nst.service"
+sed -e "s#%h/.local/bin/nst#${BIN_DIR}/nst#g" "${REPO_DIR}/nst.service" > "${SYSTEMD_DIR}/nst.service"
 
-systemctl --user daemon-reload || true
-systemctl --user enable --now nst.service || true
+# Refuse to start alongside a manually launched instance.
+if ! systemctl --user is-active --quiet nst.service; then
+    if pgrep -af "python3 -m nst" >/dev/null 2>&1; then
+        echo "Error: a manual 'python3 -m nst' process is running. Stop it before starting nst.service:" >&2
+        pgrep -af "python3 -m nst" >&2 || true
+        exit 1
+    fi
+fi
+
+systemctl --user daemon-reload
+systemctl --user enable nst.service
+if systemctl --user is-active --quiet nst.service; then
+    systemctl --user restart nst.service
+else
+    systemctl --user start nst.service
+fi
+if ! systemctl --user is-active --quiet nst.service; then
+    systemctl --user --no-pager status nst.service || true
+    exit 1
+fi
 
 echo "nst installed. Unit: ${SYSTEMD_DIR}/nst.service"
