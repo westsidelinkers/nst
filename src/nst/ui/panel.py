@@ -7,6 +7,11 @@ from gi.repository import Gtk
 
 from nst.ui.tiles import TileGrid
 
+try:
+    from nst.ui.expanded import ExpandedPanel
+except Exception:  # pragma: no cover - environment dependent
+    ExpandedPanel = None
+
 # Layer-shell is optional at import time; keep the module importable even
 # when the library/version is unavailable or conflicts with the loaded Gtk.
 try:
@@ -32,9 +37,20 @@ class NetworkPanel(Gtk.Window):
 
         self._sample = None
         self._verdict = None
+        self._probe_result = None
+        self._devices = []
 
         self.tile_grid = TileGrid()
         self.tiles = self.tile_grid.tiles
+
+        if ExpandedPanel is not None:
+            try:
+                self.expanded_panel = ExpandedPanel()
+            except Exception:
+                self.expanded_panel = None
+        else:
+            self.expanded_panel = None
+        self.expanded = self.expanded_panel
 
         try:
             self.set_child(self.tile_grid)
@@ -73,6 +89,11 @@ class NetworkPanel(Gtk.Window):
                 ls.set_margin(self, ls.Edge.BOTTOM, 34)
             except Exception:
                 pass
+        if getattr(self, "tile_grid", None) is not None:
+            try:
+                self.set_child(self.tile_grid)
+            except Exception:
+                pass
         self.present()
 
     def show_expanded(self):
@@ -83,13 +104,33 @@ class NetworkPanel(Gtk.Window):
                 ls.set_keyboard_mode(self, ls.KeyboardMode.ON_DEMAND)
             except Exception:
                 pass
+        if getattr(self, "expanded_panel", None) is not None:
+            try:
+                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices)
+            except Exception:
+                pass
+            try:
+                self.set_child(self.expanded_panel)
+            except Exception:
+                pass
         self.present()
 
-    def update(self, sample=None):
+    def update(self, sample=None, verdict=None, probe_result=None, devices=None):
         self._sample = sample
+        if verdict is not None:
+            self._verdict = verdict
+        if probe_result is not None:
+            self._probe_result = probe_result
+        if devices is not None:
+            self._devices = list(devices)
         if getattr(self, "tile_grid", None) is not None:
             try:
-                self.tile_grid.update(sample, self._verdict)
+                self.tile_grid.update(self._sample, self._verdict)
+            except Exception:
+                pass
+        if getattr(self, "expanded_panel", None) is not None:
+            try:
+                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices)
             except Exception:
                 pass
 
@@ -98,5 +139,10 @@ class NetworkPanel(Gtk.Window):
         if getattr(self, "tile_grid", None) is not None:
             try:
                 self.tile_grid.update(self._sample, verdict)
+            except Exception:
+                pass
+        if getattr(self, "expanded_panel", None) is not None:
+            try:
+                self.expanded_panel.update(self._sample, verdict, self._probe_result, self._devices)
             except Exception:
                 pass
