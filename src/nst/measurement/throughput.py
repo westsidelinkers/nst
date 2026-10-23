@@ -52,12 +52,21 @@ def parse_proc_net_dev(text: str) -> dict[str, InterfaceCounters]:
     return result
 
 
-def compute_rate(prev, curr: InterfaceCounters, elapsed_s: float) -> ThroughputResult:
+def compute_rate(prev: InterfaceCounters | None, curr: InterfaceCounters, elapsed_s: float) -> ThroughputResult:
     if prev is None:
         return ThroughputResult(valid=False)
     if elapsed_s is None or elapsed_s <= 0:
         return ThroughputResult(valid=False)
-    if curr.rx_bytes < prev.rx_bytes:
+    if (
+        curr.rx_bytes < prev.rx_bytes
+        or curr.tx_bytes < prev.tx_bytes
+        or curr.rx_dropped < prev.rx_dropped
+        or curr.rx_errors < prev.rx_errors
+        or curr.rx_packets < prev.rx_packets
+        or curr.tx_packets < prev.tx_packets
+        or curr.tx_dropped < prev.tx_dropped
+        or curr.tx_errors < prev.tx_errors
+    ):
         return ThroughputResult(valid=False)
     rx_bps = (curr.rx_bytes - prev.rx_bytes) / elapsed_s
     tx_bps = (curr.tx_bytes - prev.tx_bytes) / elapsed_s
