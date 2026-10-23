@@ -1,0 +1,18 @@
+# nst configuration example
+# Copy to ~/.config/nst/config.toml
+
+[probe]
+interval_hours = 8
+hosts = ["cacheFly", "cloudflare"]
+size_mb = 5
+connections = 8
+
+[t0]
+interval_seconds = 2
+
+[animation]
+enabled = true
+battery_threshold = 30
+
+[modules]
+enabled = ["throughput", "latency", "bufferbloat", "signal", "battery", "cpu", "memory", "disk", "public_ip", "os_updates", "ipv6", "devices"]
