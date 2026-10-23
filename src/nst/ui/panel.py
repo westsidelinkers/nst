@@ -93,6 +93,95 @@ class NetworkPanel(Gtk.Window):
             self.expanded_panel = None
         self.expanded = self.expanded_panel
 
+        # Heartbeat graph for the collapsed view.
+        try:
+            from nst.ui.heartbeat import HeartbeatGraph
+            self.heartbeat = HeartbeatGraph()
+        except Exception:
+            self.heartbeat = Gtk.Box()
+        try:
+            self.heartbeat.add_css_class("nst-heartbeat")
+            self.heartbeat.add_css_class("nst-heartbeat-container")
+        except Exception:
+            pass
+        self.heartbeat_graph = self.heartbeat
+        self.graph = self.heartbeat
+        self.heartbeat_container = self.heartbeat
+        self.heartbeat_box = self.heartbeat
+
+        # Title row: status dot, Wi-Fi icon, SSID title, verdict chip.
+        self.title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
+        try:
+            self.title_row.add_css_class("nst-title-row")
+        except Exception:
+            pass
+
+        self.status_dot = Gtk.Box()
+        try:
+            self.status_dot.add_css_class("nst-status-dot")
+            self.status_dot.set_size_request(7, 7)
+        except Exception:
+            pass
+
+        self.wifi_icon = Gtk.Label(label="\uf1eb")
+        try:
+            self.wifi_icon.add_css_class("nst-wifi-icon")
+        except Exception:
+            pass
+
+        self.title_label = Gtk.Label(label="NST")
+        try:
+            self.title_label.add_css_class("nst-title")
+            self.title_label.set_xalign(0.0)
+        except Exception:
+            pass
+
+        self.verdict_label = Gtk.Label(label="\u2014")
+        try:
+            self.verdict_label.add_css_class("nst-verdict-chip")
+        except Exception:
+            pass
+
+        for _w in (self.status_dot, self.wifi_icon, self.title_label, self.verdict_label):
+            try:
+                self.title_row.append(_w)
+            except Exception:
+                pass
+
+        # Footer.
+        self.footer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        try:
+            self.footer.add_css_class("nst-footer")
+        except Exception:
+            pass
+        self.footer_label = Gtk.Label(label="")
+        try:
+            self.footer_label.set_xalign(0.0)
+        except Exception:
+            pass
+        try:
+            self.footer.append(self.footer_label)
+        except Exception:
+            pass
+
+        # Collapsed view as a vertical box.
+        self.collapsed_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        try:
+            self.collapsed_box.add_css_class("nst-panel")
+            self.collapsed_box.add_css_class("nst-collapsed")
+        except Exception:
+            pass
+        for _w in (self.title_row, self.tile_grid, self.heartbeat, self.footer):
+            try:
+                self.collapsed_box.append(_w)
+            except Exception:
+                pass
+        self.collapsed = self.collapsed_box
+        self.collapsed_view = self.collapsed_box
+        self.collapsed_container = self.collapsed_box
+        self.content_box = self.collapsed_box
+        self.main_box = self.collapsed_box
+
         # Four corner bracket widgets (targeting-reticle aesthetic).
         self.corner_brackets = []
         self.top_left_bracket = None
@@ -103,7 +192,7 @@ class NetworkPanel(Gtk.Window):
         self._corner_overlay = None
         try:
             overlay = Gtk.Overlay()
-            overlay.set_child(self.tile_grid)
+            overlay.set_child(self.collapsed_box)
             specs = [
                 ("\u250c", Gtk.Align.START, Gtk.Align.START, "top_left"),
                 ("\u2510", Gtk.Align.END, Gtk.Align.START, "top_right"),
@@ -133,7 +222,7 @@ class NetworkPanel(Gtk.Window):
             self.set_child(overlay)
         except Exception:
             try:
-                self.set_child(self.tile_grid)
+                self.set_child(self.collapsed_box)
             except Exception:
                 pass
 
@@ -355,6 +444,92 @@ class NetworkPanel(Gtk.Window):
             self._devices = list(devices)
         if modules is not None:
             self._modules = list(modules)
+
+        # Refresh collapsed title/verdict/heartbeat from sample/verdict.
+        try:
+            def _attr(obj, *names, default=None):
+                if obj is None:
+                    return default
+                if isinstance(obj, dict):
+                    for n in names:
+                        if n in obj and obj[n] is not None:
+                            return obj[n]
+                    return default
+                for n in names:
+                    if hasattr(obj, n):
+                        v = getattr(obj, n)
+                        if v is not None:
+                            return v
+                return default
+
+            # Title (SSID / interface).
+            title_text = _attr(sample, "ssid", "ssid_name", "wifi_ssid", "interface", "iface", default=None)
+            if title_text is None and self.config is not None:
+                title_text = getattr(self.config, "interface", None) or getattr(self.config, "ssid", None)
+            if title_text is not None and getattr(self, "title_label", None) is not None:
+                try:
+                    self.title_label.set_label(str(title_text))
+                except Exception:
+                    try:
+                        self.title_label.set_text(str(title_text))
+                    except Exception:
+                        pass
+
+            # Verdict chip.
+            vstr = None
+            if self._verdict is not None:
+                vstr = getattr(self._verdict, "value", self._verdict)
+            vstr = None if vstr is None else str(vstr)
+            if vstr is not None and getattr(self, "verdict_label", None) is not None:
+                try:
+                    self.verdict_label.set_label(vstr)
+                except Exception:
+                    try:
+                        self.verdict_label.set_text(vstr)
+                    except Exception:
+                        pass
+                # State classes.
+                state = vstr.strip().upper()
+                mapping = {
+                    "HEALTHY": "ok",
+                    "ISP_LIMITED": "warn",
+                    "HIGH_LATENCY": "warn",
+                    "RADIO_DEGRADED": "bad",
+                }
+                cls = mapping.get(state, "warn")
+                managed = {"ok", "good", "healthy", "warn", "warning", "bad", "error", "critical"}
+                for c in managed:
+                    try:
+                        self.verdict_label.remove_css_class(c)
+                    except Exception:
+                        pass
+                try:
+                    self.verdict_label.add_css_class(cls)
+                except Exception:
+                    pass
+                # status dot
+                if getattr(self, "status_dot", None) is not None:
+                    for c in managed:
+                        try:
+                            self.status_dot.remove_css_class(c)
+                        except Exception:
+                            pass
+                    try:
+                        self.status_dot.add_css_class(cls)
+                    except Exception:
+                        pass
+
+            # Heartbeat.
+            hb = getattr(self, "heartbeat", None)
+            if hb is not None and hasattr(hb, "add_sample"):
+                try:
+                    rx_bps = _attr(sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0)
+                    hb.add_sample(float(rx_bps or 0.0) / 1e6)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         if getattr(self, "tile_grid", None) is not None:
             try:
                 self.tile_grid.update(self._sample, self._verdict)
@@ -373,14 +548,7 @@ class NetworkPanel(Gtk.Window):
         return self.handle_key(keyval, state, keycode)
 
     def set_verdict(self, verdict=None):
-        self._verdict = verdict
-        if getattr(self, "tile_grid", None) is not None:
-            try:
-                self.tile_grid.update(self._sample, verdict)
-            except Exception:
-                pass
-        if getattr(self, "expanded_panel", None) is not None:
-            try:
-                self.expanded_panel.update(self._sample, verdict, self._probe_result, self._devices, self._modules)
-            except Exception:
-                pass
+        try:
+            self.update(self._sample, verdict, self._probe_result, self._devices, self._modules)
+        except Exception:
+            self._verdict = verdict

@@ -75,22 +75,38 @@ class Tile(Gtk.Box):
 
         self.label = Gtk.Label(label=str(name))
         self.label.add_css_class("nst-tile-label")
+        self.label.add_css_class("k")
         self.label.set_xalign(0.0)
 
-        self.bar = Gtk.Box()
+        self.track = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.track.add_css_class("nst-mus")
+        self.track.add_css_class("nst-bar-track")
+        self.track.set_size_request(-1, 16)
+
+        self.bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.bar.add_css_class("nst-bar")
-        self.bar.set_size_request(-1, 4)
+        try:
+            self.bar.set_halign(Gtk.Align.START)
+        except Exception:
+            pass
+        try:
+            self.bar.set_valign(Gtk.Align.FILL)
+        except Exception:
+            pass
+        self.track.append(self.bar)
 
         self.value = Gtk.Label(label="\u2014")
         self.value.add_css_class("nst-tile-value")
+        self.value.add_css_class("v")
         self.value.set_xalign(0.0)
 
         self.subtitle = Gtk.Label(label="")
         self.subtitle.add_css_class("nst-tile-subtitle")
+        self.subtitle.add_css_class("sub")
         self.subtitle.set_xalign(0.0)
 
         self.append(self.label)
-        self.append(self.bar)
+        self.append(self.track)
         self.append(self.value)
         self.append(self.subtitle)
 
@@ -102,6 +118,9 @@ class Tile(Gtk.Box):
         self.value_label = self.value
         self.subtitle_label = self.subtitle
         self.bar_box = self.bar
+        self.bar_track = self.track
+        self.bar_container = self.track
+        self.mus_box = self.track
 
     def set_state(self, state):
         state = _normalize_state(state)
@@ -416,7 +435,7 @@ class TileGrid(Gtk.Grid):
             except Exception:
                 pass
         try:
-            tile.bar.set_size_request(-1, max(2, int(40 * pct / 100.0)))
+            tile.bar.set_size_request(-1, -1)
         except Exception:
             pass
         try:
