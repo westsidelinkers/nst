@@ -10,6 +10,14 @@ import threading
 import time
 from typing import Any, Optional
 
+# Load gtk4-layer-shell before GTK/GDK so it can interpose Wayland symbols.
+try:
+    from ctypes import CDLL, RTLD_GLOBAL
+
+    CDLL("libgtk4-layer-shell.so.0", mode=RTLD_GLOBAL)
+except Exception:  # pragma: no cover - environment dependent
+    pass
+
 import gi
 
 gi.require_version("Gtk", "4.0")
