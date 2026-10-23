@@ -145,7 +145,7 @@ window.csd,
     min-height: 16px;
     margin: 3px 0 4px;
     border-radius: 2px;
-    background-color: rgba(122,162,247,.04);
+    background-color: rgba(255,255,255,.05);
 }
 
 .nst-bar {
@@ -181,7 +181,7 @@ window.csd,
     min-height: 34px;
     margin: 8px 0 0 0;
     border-radius: 4px;
-    background-color: rgba(122,162,247,.04);
+    background-color: transparent;
 }
 
 .nst-status-dot {

@@ -85,6 +85,130 @@ class _AnimationLevel(str):
         return str(self)
 
 
+def _cancel_size_animation(widget):
+    """Cancel a pending data-driven size animation on widget."""
+    anim_id = getattr(widget, "_nst_anim_id", None)
+    if anim_id is not None:
+        try:
+            if GLib is not None:
+                GLib.source_remove(anim_id)
+        except Exception:
+            pass
+        try:
+            widget._nst_anim_id = None
+        except Exception:
+            pass
+
+
+def _animate_size(widget, target, apply, enabled=True):
+    """Animate a widget size toward target; apply(value) sets the size.
+
+    The widget stores its own animation state, so independent bars can
+    animate concurrently. When enabled is False (reduced motion / config),
+    the target is applied immediately.
+    """
+    try:
+        target = float(target)
+    except (TypeError, ValueError):
+        target = 0.0
+
+    if not getattr(widget, "_nst_anim_initialized", False):
+        try:
+            widget._nst_anim_value = 0.0
+            widget._nst_anim_initialized = True
+        except Exception:
+            pass
+
+    try:
+        widget._nst_anim_target = target
+    except Exception:
+        pass
+
+    if not enabled or GLib is None:
+        _cancel_size_animation(widget)
+        try:
+            widget._nst_anim_value = target
+        except Exception:
+            pass
+        apply(target)
+        return
+
+    if getattr(widget, "_nst_anim_id", None) is not None:
+        return
+
+    try:
+        widget._nst_anim_value = float(getattr(widget, "_nst_anim_value", 0.0))
+    except Exception:
+        widget._nst_anim_value = 0.0
+
+    def _tick():
+        try:
+            current = float(getattr(widget, "_nst_anim_value", target))
+            goal = float(getattr(widget, "_nst_anim_target", target))
+            diff = goal - current
+            if abs(diff) <= 0.5:
+                widget._nst_anim_value = goal
+                widget._nst_anim_id = None
+                apply(goal)
+                return False
+            step = diff * 0.30
+            if abs(step) < 0.5:
+                step = 0.5 if diff > 0 else -0.5
+            widget._nst_anim_value = current + step
+            apply(widget._nst_anim_value)
+            return True
+        except Exception:
+            try:
+                widget._nst_anim_id = None
+            except Exception:
+                pass
+            return False
+
+    try:
+        widget._nst_anim_id = GLib.timeout_add(16, _tick)
+    except Exception:
+        widget._nst_anim_id = None
+        apply(target)
+
+
+def _set_bar_width(tile, pct):
+    """Set tile.bar's width from pct using the current track allocation."""
+    pct = max(0.0, min(100.0, float(pct or 0.0)))
+    try:
+        tile._bar_pct = pct
+    except Exception:
+        pass
+    try:
+        tile.bar._bar_pct = pct
+    except Exception:
+        pass
+    try:
+        tile.track._bar_pct = pct
+    except Exception:
+        pass
+    try:
+        track_width = None
+        try:
+            track_width = tile.track.get_allocated_width()
+        except Exception:
+            track_width = None
+        if not track_width:
+            try:
+                track_width = tile.track.get_width()
+            except Exception:
+                track_width = None
+        if track_width and track_width > 0:
+            bar_width = max(2, int(track_width * pct / 100.0))
+        else:
+            bar_width = max(2, int(pct * 1.4))
+        tile.bar.set_size_request(bar_width, 16)
+    except Exception:
+        try:
+            tile.bar.set_size_request(max(2, int(pct * 1.4)), 16)
+        except Exception:
+            pass
+
+
 class Tile(Gtk.Box):
     _WIDTH_CLASSES = {f"nst-bar--w-{i}" for i in range(0, 105, 5)}
     """A single collapsed panel tile: label, musical bar, value, subtitle."""
@@ -101,6 +225,8 @@ class Tile(Gtk.Box):
             pass
         self.name = name
         self.tile_name = name
+        self._bar_pct = 0.0
+        self._bar_target_pct = 0.0
 
         self.label = Gtk.Label(label=str(name))
         self.label.add_css_class("nst-tile-label")
@@ -566,6 +692,15 @@ class TileGrid(Gtk.Grid):
         else:
             disk_value = "\u2014"
             disk_subtitle = "disk"
+        try:
+            if total_bytes > 0:
+                disk_used_pct = 100.0 * _to_float(disk_used_bytes) / total_bytes
+            elif disk_free > 0:
+                disk_used_pct = 100.0 - disk_free
+            else:
+                disk_used_pct = 0.0
+        except Exception:
+            disk_used_pct = 0.0
         if disk_free >= 20:
             disk_state = "good"
         elif disk_free >= 10:
@@ -576,7 +711,7 @@ class TileGrid(Gtk.Grid):
             "DISK",
             value=disk_value,
             subtitle=disk_subtitle,
-            pct=max(0.0, min(100.0, disk_free)),
+            pct=max(0.0, min(100.0, disk_used_pct)),
             state=disk_state,
         )
 
@@ -619,17 +754,9 @@ class TileGrid(Gtk.Grid):
             except Exception:
                 pass
 
-        # Store the percentage for responsive resizing.
+        # Remember the target for responsive resizing while the bar animates.
         try:
-            tile._bar_pct = pct
-        except Exception:
-            pass
-        try:
-            tile.bar._bar_pct = pct
-        except Exception:
-            pass
-        try:
-            tile.track._bar_pct = pct
+            tile._bar_target_pct = pct
         except Exception:
             pass
 
@@ -642,28 +769,12 @@ class TileGrid(Gtk.Grid):
         except Exception:
             pass
 
-        # Size request based on track allocation when available.
-        try:
-            track_width = None
-            try:
-                track_width = tile.track.get_allocated_width()
-            except Exception:
-                track_width = None
-            if not track_width:
-                try:
-                    track_width = tile.track.get_width()
-                except Exception:
-                    track_width = None
-            if track_width and track_width > 0:
-                bar_width = max(2, int(track_width * pct / 100.0))
-            else:
-                bar_width = max(2, int(pct * 1.4))
-            tile.bar.set_size_request(bar_width, 16)
-        except Exception:
-            try:
-                tile.bar.set_size_request(max(2, int(pct * 1.4)), 16)
-            except Exception:
-                pass
+        _animate_size(
+            tile,
+            pct,
+            lambda value: _set_bar_width(tile, value),
+            enabled=getattr(self, "_animate", True),
+        )
 
         try:
             tile.bar.set_tooltip_text(f"{pct:.0f}%")

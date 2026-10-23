@@ -18,7 +18,8 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
   green/red trend line and a highlighted latest point. Dips below the threshold
   line mark the video-buffering moments.
 - **Data-driven bars** — thin bars between label and value; width is proportional
-  to the current measurement and changes only when the data changes.
+  to the current measurement and animates smoothly only when the data changes
+  (instant under reduced motion).
 - **Transparent on black** — fully transparent panel floating on the workspace,
   tokyonight palette, JetBrainsMono Nerd Font.
 - **Fedora Atomic-specific signals** — pending rpm-ostree updates, reboot

@@ -27,6 +27,12 @@ except Exception:  # pragma: no cover - environment dependent
     def _normalize_tile_state(state):
         return None if state is None else str(state).strip().lower()
 
+try:
+    from nst.ui.tiles import _animate_size as _animate_bar_size
+except Exception:  # pragma: no cover - environment dependent
+    def _animate_bar_size(widget, target, apply, enabled=True):
+        apply(target)
+
 
 _STATE_CLASSES = {"good", "warn", "bad", "healthy", "warning", "error",
                   "critical", "ok", "nst-good", "nst-warn", "nst-bad"}
@@ -423,9 +429,19 @@ class ExpandedPanel(Gtk.Box):
                 except Exception:
                     pass
         try:
-            bar_widget.set_size_request(-1, max(2, int(40 * pct / 100.0)))
+            _animate_bar_size(
+                bar_widget,
+                pct,
+                lambda value: bar_widget.set_size_request(
+                    -1, max(2, int(40 * float(value) / 100.0))
+                ),
+                enabled=getattr(self, "_animate", True),
+            )
         except Exception:
-            pass
+            try:
+                bar_widget.set_size_request(-1, max(2, int(40 * pct / 100.0)))
+            except Exception:
+                pass
         try:
             bar_widget.set_tooltip_text(f"{pct:.0f}%")
         except Exception:

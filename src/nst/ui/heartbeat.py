@@ -156,14 +156,6 @@ class HeartbeatGraph(Gtk.DrawingArea):
         pad_x = 6.0
         plot_w = max(1.0, width - (2.0 * pad_x))
 
-        # Translucent chart pane (keeps the panel transparency visible).
-        try:
-            cr.set_source_rgba(0.04, 0.05, 0.09, 0.22)
-            cr.rectangle(0, 0, width, height)
-            cr.fill()
-        except Exception:
-            pass
-
         # Faint grid: 3 horizontal and 5 vertical lines.
         try:
             cr.set_source_rgba(0.55, 0.62, 0.78, 0.10)
@@ -183,26 +175,46 @@ class HeartbeatGraph(Gtk.DrawingArea):
 
         samples = self.samples or []
         floats = [_to_float(s) for s in samples]
-        max_val = max(floats + [self.threshold, 1.0]) if floats else max(self.threshold, 1.0)
-        if max_val < self.threshold + 1.0:
-            max_val = self.threshold + 1.0
+        if floats:
+            data_lo = min(floats)
+            data_hi = max(floats)
+        else:
+            data_lo = 0.0
+            data_hi = 0.0
 
-        # Faint dashed threshold line.
+        span = data_hi - data_lo
+        if span < max(0.1, data_hi * 0.05):
+            # Flat or very low variation: centre the trace with a small
+            # floor so it still occupies the plot instead of hugging zero.
+            span = max(1.0, data_hi * 0.5)
+            lo = data_hi - span / 2.0
+            hi = lo + span
+        else:
+            pad = span * 0.15
+            lo = data_lo - pad
+            hi = data_hi + pad
+            span = hi - lo
+        if span <= 0:
+            lo = -0.5
+            span = 1.0
+
+        # Faint dashed threshold line, only when it falls inside the plot.
         try:
-            ty = plot_bottom - (self.threshold / max_val) * plot_h
-            cr.set_source_rgba(0.95, 0.25, 0.25, 0.40)
-            cr.set_line_width(1.0)
-            try:
-                cr.set_dash([6.0, 4.0])
-            except Exception:
-                pass
-            cr.move_to(0, ty)
-            cr.line_to(width, ty)
-            cr.stroke()
-            try:
-                cr.set_dash([])
-            except Exception:
-                pass
+            ty = plot_bottom - ((self.threshold - lo) / span) * plot_h
+            if pad_y <= ty <= plot_bottom:
+                cr.set_source_rgba(0.95, 0.25, 0.25, 0.40)
+                cr.set_line_width(1.0)
+                try:
+                    cr.set_dash([6.0, 4.0])
+                except Exception:
+                    pass
+                cr.move_to(0, ty)
+                cr.line_to(width, ty)
+                cr.stroke()
+                try:
+                    cr.set_dash([])
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -214,7 +226,7 @@ class HeartbeatGraph(Gtk.DrawingArea):
             xs = [width / 2.0]
         else:
             xs = [pad_x + i / (n - 1) * plot_w for i in range(n)]
-        ys = [plot_bottom - (v / max_val) * plot_h for v in floats]
+        ys = [plot_bottom - ((v - lo) / span) * plot_h for v in floats]
 
         # Trend color: first vs last sample.
         first = floats[0]
