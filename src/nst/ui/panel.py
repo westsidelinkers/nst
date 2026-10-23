@@ -5,6 +5,8 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
+from nst.ui.tiles import TileGrid
+
 # Layer-shell is optional at import time; keep the module importable even
 # when the library/version is unavailable or conflicts with the loaded Gtk.
 try:
@@ -30,6 +32,14 @@ class NetworkPanel(Gtk.Window):
 
         self._sample = None
         self._verdict = None
+
+        self.tile_grid = TileGrid()
+        self.tiles = self.tile_grid.tiles
+
+        try:
+            self.set_child(self.tile_grid)
+        except Exception:
+            pass
 
         self._setup_layer_shell()
 
@@ -77,6 +87,16 @@ class NetworkPanel(Gtk.Window):
 
     def update(self, sample=None):
         self._sample = sample
+        if getattr(self, "tile_grid", None) is not None:
+            try:
+                self.tile_grid.update(sample, self._verdict)
+            except Exception:
+                pass
 
     def set_verdict(self, verdict=None):
         self._verdict = verdict
+        if getattr(self, "tile_grid", None) is not None:
+            try:
+                self.tile_grid.update(self._sample, verdict)
+            except Exception:
+                pass
