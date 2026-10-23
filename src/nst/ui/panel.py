@@ -274,7 +274,7 @@ class NetworkPanel(Gtk.Window):
             return
         try:
             ls.init_for_window(self)
-            ls.set_layer(self, ls.Layer.TOP)
+            ls.set_layer(self, ls.Layer.BOTTOM)
             ls.set_namespace(self, "netstatus")
             ls.set_anchor(self, ls.Edge.BOTTOM, True)
             ls.set_anchor(self, ls.Edge.LEFT, True)
