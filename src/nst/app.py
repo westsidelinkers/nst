@@ -243,7 +243,10 @@ class NstApplication(Gtk.Application):
 
     def _probe_tick(self) -> bool:
         if self._quitting:
+            self._probe_timer_id = None
             return False
+        # This one-shot source removes itself on return; clear the stale id.
+        self._probe_timer_id = None
         # Spawn the probe in a background thread; never block the main loop.
         try:
             thread = threading.Thread(target=self._probe_worker, daemon=True)
@@ -264,9 +267,10 @@ class NstApplication(Gtk.Application):
             hours = 1
         # Use a one-shot reschedule to avoid overlapping.
         try:
-            GLib.timeout_add_seconds(hours * 3600, self._probe_tick)
+            self._probe_timer_id = GLib.timeout_add_seconds(hours * 3600, self._probe_tick)
         except Exception as exc:
             logger.debug("Probe reschedule failed: %s", exc)
+            self._probe_timer_id = None
         return False
 
     def _probe_worker(self) -> None:
