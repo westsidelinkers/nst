@@ -179,17 +179,71 @@ class HeartbeatGraph(Gtk.DrawingArea):
             return False
         return True
 
-    def _draw(self, area, cr, width, height, user_data=None):
+    def _draw(self, *args, **kwargs):
+        user_data = kwargs.get("user_data", None)
+        area = None
+        cr = None
+        width = 0
+        height = 0
+
+        if len(args) == 5:
+            area, cr, width, height, user_data = args
+        elif len(args) == 4:
+            a0, a1, a2, a3 = args
+            if isinstance(a2, (int, float)) and isinstance(a3, (int, float)):
+                area, cr, width, height = args
+            else:
+                cr, width, height, user_data = args
+                area = self
+        elif len(args) == 3:
+            a0, a1, a2 = args
+            if isinstance(a1, (int, float)) and isinstance(a2, (int, float)):
+                cr, width, height = args
+                area = self
+            else:
+                area, cr, width = args
+                height = width
+        elif len(args) == 2:
+            cr, width = args
+            height = width
+            area = self
+        elif len(args) == 1:
+            cr = args[0]
+            try:
+                width = self.get_allocated_width()
+            except Exception:
+                width = 0
+            try:
+                height = self.get_allocated_height()
+            except Exception:
+                height = 0
+            area = self
+        else:
+            cr = kwargs.get("cr")
+            width = kwargs.get("width", 0)
+            height = kwargs.get("height", 0)
+            area = kwargs.get("area", self)
+
+        try:
+            width = int(width) if width is not None else 0
+        except (TypeError, ValueError):
+            width = 0
+        try:
+            height = int(height) if height is not None else 0
+        except (TypeError, ValueError):
+            height = 0
+
         try:
             self._draw_impl(cr, width, height)
         except Exception:
             try:
-                if width and height:
+                if width and height and cr is not None:
                     cr.set_source_rgb(0, 0, 0)
                     cr.rectangle(0, 0, width, height)
                     cr.fill()
             except Exception:
                 pass
+        return None
 
     def _draw_impl(self, cr, width, height):
         if not width or not height:
@@ -296,19 +350,12 @@ class HeartbeatGraph(Gtk.DrawingArea):
 
 
     def draw(self, *args, **kwargs):
-        if len(args) == 3:
-            return self._draw(self, args[0], args[1], args[2], None, **kwargs)
         return self._draw(*args, **kwargs)
 
     def on_draw(self, *args, **kwargs):
-        if len(args) == 3:
-            return self._draw(self, args[0], args[1], args[2], None, **kwargs)
         return self._draw(*args, **kwargs)
 
     def do_draw(self, *args, **kwargs):
-        # Support both (cr, width, height) and (area, cr, width, height[, user_data]).
-        if len(args) == 3:
-            return self._draw(self, args[0], args[1], args[2], None, **kwargs)
         return self._draw(*args, **kwargs)
 
 

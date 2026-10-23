@@ -521,7 +521,7 @@ class NetworkPanel(Gtk.Window):
 
             # Heartbeat.
             hb = getattr(self, "heartbeat", None)
-            if hb is not None and hasattr(hb, "add_sample"):
+            if sample is not None and hb is not None and hasattr(hb, "add_sample"):
                 try:
                     rx_bps = _attr(sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0)
                     hb.add_sample(float(rx_bps or 0.0) / 1e6)

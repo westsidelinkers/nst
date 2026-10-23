@@ -66,6 +66,7 @@ def _normalize_state(state):
 
 
 class Tile(Gtk.Box):
+    _WIDTH_CLASSES = {f"nst-bar--w-{i}" for i in range(0, 105, 5)}
     """A single collapsed panel tile: label, musical bar, value, subtitle."""
 
     def __init__(self, name, *args, **kwargs):
@@ -94,6 +95,11 @@ class Tile(Gtk.Box):
         except Exception:
             pass
         self.track.append(self.bar)
+        for _sig in ("size-allocate", "notify::width", "map", "realize"):
+            try:
+                self.track.connect(_sig, self._on_track_size_allocate)
+            except Exception:
+                pass
 
         self.value = Gtk.Label(label="\u2014")
         self.value.add_css_class("nst-tile-value")
@@ -157,7 +163,59 @@ class Tile(Gtk.Box):
         return self
 
 
+    def _on_track_size_allocate(self, widget, *args):
+        width = None
+        if args:
+            first = args[0]
+            if hasattr(first, "width"):
+                try:
+                    width = int(first.width)
+                except Exception:
+                    width = None
+            elif isinstance(first, int):
+                width = first
+            if width is None and len(args) >= 2 and isinstance(args[1], int):
+                # Some GTK bindings pass (widget, width, height, baseline).
+                width = args[0] if isinstance(args[0], int) else width
+        if not width:
+            try:
+                width = widget.get_allocated_width()
+            except Exception:
+                try:
+                    width = widget.get_width()
+                except Exception:
+                    width = 0
+        pct = getattr(self, "_bar_pct", None)
+        if pct is None:
+            try:
+                pct = self.bar._bar_pct
+            except Exception:
+                pct = 0.0
+        try:
+            pct = float(pct if pct is not None else 0.0)
+        except (TypeError, ValueError):
+            pct = 0.0
+        pct = max(0.0, min(100.0, pct))
+        self._bar_pct = pct
+        try:
+            self.bar._bar_pct = pct
+        except Exception:
+            pass
+        if width and width > 0:
+            try:
+                self.bar.set_size_request(max(2, int(width * pct / 100.0)), 16)
+            except Exception:
+                pass
+        else:
+            try:
+                self.bar.set_size_request(max(2, int(pct * 1.4)), 16)
+            except Exception:
+                pass
+        return None
+
+
 class TileGrid(Gtk.Grid):
+    _WIDTH_CLASSES = {f"nst-bar--w-{i}" for i in range(0, 105, 5)}
     """3x2 grid of six collapsed panel tiles."""
 
     TILE_NAMES = ("DOWN", "UP", "PING", "SIGNAL", "CPU", "DISK")
@@ -416,7 +474,7 @@ class TileGrid(Gtk.Grid):
 
     def _set_bar(self, tile, pct, state):
         pct = max(0.0, min(100.0, float(pct or 0.0)))
-        # Width classes (CSS) + inline height request.
+        # Width classes (CSS) capped to 0..100.
         for css_class in _WIDTH_CLASSES:
             try:
                 tile.bar.remove_css_class(css_class)
@@ -434,6 +492,21 @@ class TileGrid(Gtk.Grid):
                 tile.bar.add_css_class(_normalize_state(state))
             except Exception:
                 pass
+
+        # Store the percentage for responsive resizing.
+        try:
+            tile._bar_pct = pct
+        except Exception:
+            pass
+        try:
+            tile.bar._bar_pct = pct
+        except Exception:
+            pass
+        try:
+            tile.track._bar_pct = pct
+        except Exception:
+            pass
+
         try:
             tile.track.set_size_request(-1, 16)
         except Exception:
@@ -442,6 +515,31 @@ class TileGrid(Gtk.Grid):
             tile.bar.set_size_request(-1, 16)
         except Exception:
             pass
+
+        # Size request based on track allocation when available.
+        try:
+            track_width = None
+            try:
+                track_width = tile.track.get_allocated_width()
+            except Exception:
+                track_width = None
+            if not track_width:
+                try:
+                    track_width = tile.track.get_width()
+                except Exception:
+                    track_width = None
+            if track_width and track_width > 0:
+                bar_width = max(2, int(track_width * pct / 100.0))
+            else:
+                bar_width = max(2, int(pct * 1.4))
+            tile.bar.set_size_request(bar_width, 16)
+        except Exception:
+            try:
+                tile.bar.set_size_request(max(2, int(pct * 1.4)), 16)
+            except Exception:
+                pass
+
+        # Apply animation only when gating allows.
         try:
             if getattr(self, "_animate", True):
                 tile.bar.add_css_class("nst-animate")
