@@ -29,9 +29,8 @@ window {
 .nst-status-dot {
     min-width: 7px;
     min-height: 7px;
-    margin-right: 6px;
-    margin-top: 2px;
-    margin-bottom: 2px;
+    font-size: 7px;
+    margin: 2px 6px;
     border-radius: 999px;
     background-color: #9ece6a;
 }
