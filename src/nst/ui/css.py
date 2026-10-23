@@ -10,10 +10,19 @@ window {
 }
 
 .nst-panel {
-    background: #1a1b26;
+    background: transparent;
     color: #c0caf5;
     border-radius: 8px;
     border: 1px solid #414868;
+    box-shadow: 0 0 12px rgba(122, 162, 247, 0.35);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(192, 202, 245, 0.04) 2px,
+        rgba(192, 202, 245, 0.04) 4px
+    );
+    animation: nst-scanline 6s linear infinite;
 }
 
 window { background: transparent; }
@@ -28,6 +37,7 @@ window { background: transparent; }
     border-radius: 2px;
     min-height: 4px;
     transition: min-height 200ms ease-out;
+    transform-origin: bottom;
 }
 
 .nst-bar--w-0 { min-width: 0px; }
@@ -57,22 +67,33 @@ window { background: transparent; }
 .nst-bad, .nst-state-bad, .nst-bar.nst-bad { background: #f7768e; }
 
 @keyframes nst-bar-pulse {
-    0% { opacity: 0.85; }
-    50% { opacity: 1.0; }
-    100% { opacity: 0.85; }
+    0% { transform: scaleY(0.85); }
+    50% { transform: scaleY(1.15); }
+    100% { transform: scaleY(0.85); }
+}
+
+@keyframes nst-scanline {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 4px; }
 }
 
 .nst-bar.nst-animate {
     animation: nst-bar-pulse 1.2s ease-in-out infinite;
+    transform-origin: bottom;
 }
 
 .nst-tile {
-    background: #1a1b26;
+    background: transparent;
     color: #c0caf5;
 }
 
 .nst-tile--flash {
     animation: nst-bar-pulse 0.4s ease-in-out 1;
+}
+
+.nst-corner-bracket {
+    color: #7aa2f7;
+    font-family: monospace;
 }
 
 @media (prefers-reduced-motion: reduce) {

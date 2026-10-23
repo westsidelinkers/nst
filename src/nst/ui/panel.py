@@ -93,10 +93,49 @@ class NetworkPanel(Gtk.Window):
             self.expanded_panel = None
         self.expanded = self.expanded_panel
 
+        # Four corner bracket widgets (targeting-reticle aesthetic).
+        self.corner_brackets = []
+        self.top_left_bracket = None
+        self.top_right_bracket = None
+        self.bottom_left_bracket = None
+        self.bottom_right_bracket = None
+        self.brackets = {}
+        self._corner_overlay = None
         try:
-            self.set_child(self.tile_grid)
+            overlay = Gtk.Overlay()
+            overlay.set_child(self.tile_grid)
+            specs = [
+                ("\u250c", Gtk.Align.START, Gtk.Align.START, "top_left"),
+                ("\u2510", Gtk.Align.END, Gtk.Align.START, "top_right"),
+                ("\u2514", Gtk.Align.START, Gtk.Align.END, "bottom_left"),
+                ("\u2518", Gtk.Align.END, Gtk.Align.END, "bottom_right"),
+            ]
+            for ch, halign, valign, key in specs:
+                lbl = Gtk.Label(label=ch)
+                try:
+                    lbl.add_css_class("nst-corner-bracket")
+                    lbl.add_css_class("nst-corner")
+                except Exception:
+                    pass
+                try:
+                    lbl.set_halign(halign)
+                    lbl.set_valign(valign)
+                except Exception:
+                    pass
+                try:
+                    overlay.add_overlay(lbl)
+                except Exception:
+                    pass
+                self.corner_brackets.append(lbl)
+                setattr(self, key + "_bracket", lbl)
+                self.brackets[key] = lbl
+            self._corner_overlay = overlay
+            self.set_child(overlay)
         except Exception:
-            pass
+            try:
+                self.set_child(self.tile_grid)
+            except Exception:
+                pass
 
         # Keyboard shortcuts.
         try:
@@ -249,9 +288,12 @@ class NetworkPanel(Gtk.Window):
                 ls.set_margin(self, ls.Edge.BOTTOM, 34)
             except Exception:
                 pass
-        if getattr(self, "tile_grid", None) is not None:
+        child = getattr(self, "_corner_overlay", None)
+        if child is None:
+            child = getattr(self, "tile_grid", None)
+        if child is not None:
             try:
-                self.set_child(self.tile_grid)
+                self.set_child(child)
             except Exception:
                 pass
         self.present()

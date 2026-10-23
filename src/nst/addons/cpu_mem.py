@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import shutil
 from typing import Any
 
 from nst.addons.base import AddonModule
@@ -133,6 +134,17 @@ class CpuMemAddon(AddonModule):
         except Exception:
             pass
 
+        # Disk space (best effort).
+        try:
+            du = shutil.disk_usage("/")
+            data["disk_total_bytes"] = int(du.total)
+            data["disk_used_bytes"] = int(du.used)
+            data["disk_free_bytes"] = int(du.free)
+            if du.total > 0:
+                data["disk_free_pct"] = round((du.free / du.total) * 100.0, 1)
+        except Exception:
+            pass
+
         self._data = data
         return dict(data)
 
@@ -151,7 +163,13 @@ class CpuMemAddon(AddonModule):
         cpu = d.get("cpu_pct", 0)
         temp = d.get("cpu_temp_c", 0)
         mem = d.get("mem_pct", 0)
-        text = f"CPU {cpu:.0f}%  {temp:.0f}°C   Mem {mem:.0f}%"
+        used = d.get("disk_used_bytes", 0)
+        total = d.get("disk_total_bytes", 0)
+        free = d.get("disk_free_bytes", 0)
+        try:
+            text = f"CPU {cpu:.0f}%  {temp:.0f}\u00b0C   Mem {mem:.0f}%   Disk {used / (1024**3):.1f}/{total / (1024**3):.1f} GB ({free / (1024**3):.1f} GB free)"
+        except Exception:
+            text = f"CPU {cpu:.0f}%  {temp:.0f}\u00b0C   Mem {mem:.0f}%"
         return Gtk.Label(label=text, xalign=0)
 
 

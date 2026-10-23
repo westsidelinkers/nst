@@ -2,6 +2,7 @@ import re
 import threading
 import time
 import subprocess
+import shutil
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
@@ -115,6 +116,10 @@ class T0Sample:
     battery_health_pct: float = 0.0
     on_battery: bool = False
     cpu_temp_c: float = 0.0
+    disk_total_bytes: int = 0
+    disk_used_bytes: int = 0
+    disk_free_bytes: int = 0
+    disk_free_pct: float = 0.0
     public_ip: Optional[str] = None
     ipv6_global: Optional[str] = None
 
@@ -423,6 +428,17 @@ class T0Monitor:
         try:
             with open("/sys/class/thermal/thermal_zone0/temp") as f:
                 sample.cpu_temp_c = float(f.read().strip()) / 1000.0
+        except Exception:
+            pass
+
+        # Disk space (best effort).
+        try:
+            du = shutil.disk_usage("/")
+            sample.disk_total_bytes = int(du.total)
+            sample.disk_used_bytes = int(du.used)
+            sample.disk_free_bytes = int(du.free)
+            if du.total > 0:
+                sample.disk_free_pct = float(du.free) / float(du.total) * 100.0
         except Exception:
             pass
 

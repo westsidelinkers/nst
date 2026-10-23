@@ -337,7 +337,7 @@ class TileGrid(Gtk.Grid):
             state=cpu_state,
         )
 
-        # DISK (free %)
+        # DISK (used/available space)
         disk_free = _to_float(
             _attr(sample, "disk_free_pct", "disk_pct", "disk_free_percent", "disk_percent", default=0.0)
         )
@@ -346,6 +346,23 @@ class TileGrid(Gtk.Grid):
             usage = _attr(sample, "disk_usage_pct", "disk_usage_percent", "disk_usage", default=None)
             if usage is not None:
                 disk_free = max(0.0, 100.0 - _to_float(usage))
+        disk_total_bytes = _attr(sample, "disk_total_bytes", default=None)
+        disk_used_bytes = _attr(sample, "disk_used_bytes", default=None)
+        disk_free_bytes = _attr(sample, "disk_free_bytes", default=None)
+        if disk_total_bytes is not None and disk_used_bytes is not None and disk_free_bytes is not None:
+            try:
+                total_gb = _to_float(disk_total_bytes) / (1024.0 ** 3)
+                used_gb = _to_float(disk_used_bytes) / (1024.0 ** 3)
+                free_gb = _to_float(disk_free_bytes) / (1024.0 ** 3)
+                disk_value = f"{used_gb:.1f}/{total_gb:.1f} GB"
+                disk_subtitle = f"{free_gb:.1f} GB free"
+            except Exception:
+                disk_value = f"{disk_free:.0f}%"
+                disk_subtitle = "free"
+        else:
+            # Fall back to free percentage when byte counts are unavailable.
+            disk_value = f"{disk_free:.0f}%"
+            disk_subtitle = "free"
         if disk_free >= 20:
             disk_state = "good"
         elif disk_free >= 10:
@@ -354,8 +371,8 @@ class TileGrid(Gtk.Grid):
             disk_state = "bad"
         self._update_tile(
             "DISK",
-            value=f"{disk_free:.0f}%",
-            subtitle="free",
+            value=disk_value,
+            subtitle=disk_subtitle,
             pct=max(0.0, min(100.0, disk_free)),
             state=disk_state,
         )
