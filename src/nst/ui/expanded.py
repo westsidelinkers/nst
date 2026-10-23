@@ -427,21 +427,6 @@ class ExpandedPanel(Gtk.Box):
         except Exception:
             pass
         try:
-            level = getattr(self, "_animation_level", None)
-            if level is None:
-                level = self._compute_animation_level()
-            if not getattr(self, "_animate", True):
-                bar_widget.remove_css_class("nst-animate")
-                bar_widget.remove_css_class("nst-animate-reduced")
-            elif level == "reduced":
-                bar_widget.remove_css_class("nst-animate")
-                bar_widget.add_css_class("nst-animate-reduced")
-            else:
-                bar_widget.remove_css_class("nst-animate-reduced")
-                bar_widget.add_css_class("nst-animate")
-        except Exception:
-            pass
-        try:
             bar_widget.set_tooltip_text(f"{pct:.0f}%")
         except Exception:
             pass

@@ -1,7 +1,4 @@
-"""Scrolling heartbeat graph (ECG-style throughput waveform)."""
-
-import os
-import time
+"""Crypto-style throughput chart showing live samples."""
 
 import gi
 
@@ -26,7 +23,6 @@ except Exception:  # pragma: no cover - environment dependent
 
 _THRESHOLD_MBIT = 15.0
 _DEFAULT_MAX_SAMPLES = 200
-_SCROLL_DURATION_S = 0.3
 
 
 def _to_float(value, default=0.0):
@@ -41,7 +37,7 @@ def _to_float(value, default=0.0):
 
 
 class HeartbeatGraph(Gtk.DrawingArea):
-    """ECG-style scrolling waveform showing throughput samples over time."""
+    """Crypto-style throughput chart showing live samples."""
 
     def __init__(self, max_samples=_DEFAULT_MAX_SAMPLES, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -60,17 +56,6 @@ class HeartbeatGraph(Gtk.DrawingArea):
         self.THRESHOLD = _THRESHOLD_MBIT
         self.threshold_value = _THRESHOLD_MBIT
 
-        self._tick_id = None
-        self.tick_id = None
-        self._tick_callback_id = None
-        self.tick_callback_id = None
-        self._scrolling = False
-        self.scrolling = False
-        self.is_scrolling = False
-        self._scroll_start_us = None
-        self._scroll_offset = 0.0
-        self._scroll_duration = _SCROLL_DURATION_S
-
         try:
             self.set_draw_func(self._draw, None)
         except Exception:
@@ -86,98 +71,11 @@ class HeartbeatGraph(Gtk.DrawingArea):
         if len(self.samples) > self.max_samples:
             del self.samples[: len(self.samples) - self.max_samples]
 
-        self._scrolling = True
-        self.scrolling = True
-        self.is_scrolling = True
-        self._scroll_start_us = None
-        self._scroll_offset = 0.0
-        try:
-            self.start_scroll()
-        except Exception:
-            pass
         try:
             self.queue_draw()
         except Exception:
             pass
         return self
-
-    def start_scroll(self):
-        if self._tick_id is not None:
-            return self._tick_id
-        try:
-            cb_id = self.add_tick_callback(self._on_tick, None)
-        except Exception:
-            cb_id = None
-        self._tick_id = cb_id
-        self.tick_id = cb_id
-        self._tick_callback_id = cb_id
-        self.tick_callback_id = cb_id
-        self._scrolling = True
-        self.scrolling = True
-        self.is_scrolling = True
-        self.scrolling = True
-        return cb_id
-
-    def stop_scroll(self):
-        cb_id = self._tick_id
-        if cb_id is not None:
-            try:
-                self.remove_tick_callback(cb_id)
-            except Exception:
-                pass
-        self._tick_id = None
-        self.tick_id = None
-        self._tick_callback_id = None
-        self.tick_callback_id = None
-        self._scrolling = False
-        self.scrolling = False
-        self.is_scrolling = False
-        self._scroll_start_us = None
-        self._scroll_offset = 1.0
-        try:
-            self.queue_draw()
-        except Exception:
-            pass
-        return self
-
-    def _on_tick(self, widget, frame_clock, user_data=None):
-        try:
-            if self._scroll_start_us is None:
-                try:
-                    self._scroll_start_us = frame_clock.get_frame_time()
-                except Exception:
-                    self._scroll_start_us = int(time.monotonic() * 1e6)
-            try:
-                now_us = frame_clock.get_frame_time()
-            except Exception:
-                now_us = int(time.monotonic() * 1e6)
-            elapsed = (now_us - self._scroll_start_us) / 1e6
-        except Exception:
-            elapsed = self._scroll_duration
-
-        progress = elapsed / self._scroll_duration if self._scroll_duration > 0 else 1.0
-        if progress < 0.0:
-            progress = 0.0
-        if progress > 1.0:
-            progress = 1.0
-        self._scroll_offset = progress
-
-        try:
-            self.queue_draw()
-        except Exception:
-            pass
-
-        if progress >= 1.0:
-            self._scrolling = False
-            self.scrolling = False
-            self.is_scrolling = False
-            self._tick_id = None
-            self.tick_id = None
-            self._tick_callback_id = None
-            self.tick_callback_id = None
-            self._scroll_start_us = None
-            return False
-        return True
 
     def _draw(self, *args, **kwargs):
         user_data = kwargs.get("user_data", None)

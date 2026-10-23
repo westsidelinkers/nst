@@ -151,15 +151,7 @@ window.csd,
 .nst-bar {
     min-height: 16px;
     border-radius: 2px;
-    animation: musBounce 1.3s ease-in-out infinite;
     background-color: #7aa2f7;
-}
-.nst-bar.nst-animate {
-    animation: musBounce 1.3s ease-in-out infinite;
-}
-
-.nst-bar.nst-animate-reduced {
-    animation: musBounce 2.4s ease-in-out infinite;
 }
 
 @keyframes musBounce {

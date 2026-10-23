@@ -471,19 +471,6 @@ class NstApplication(Gtk.Application):
                     logger.debug("Positional panel.update failed: %s", exc2)
                     pass
 
-        # Heartbeat update (expanded panel handles via panel.update, but ensure).
-        try:
-            hb = self.heartbeat
-            if hb is not None and hasattr(hb, "add_sample"):
-                value = _attr(sample, "rx_bps", "rx_mbps", default=0.0)
-                try:
-                    value = float(value) / 1e6 if value is not None else 0.0
-                except Exception:
-                    value = 0.0
-                hb.add_sample(value)
-        except Exception:
-            pass
-
         # GLib idle callbacks should not repeat.
         return False
 

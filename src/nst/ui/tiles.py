@@ -665,22 +665,6 @@ class TileGrid(Gtk.Grid):
             except Exception:
                 pass
 
-        # Apply animation only when gating allows.
-        try:
-            level = getattr(self, "_animation_level", None)
-            if level is None:
-                level = self._compute_animation_level()
-            if not getattr(self, "_animate", True):
-                tile.bar.remove_css_class("nst-animate")
-                tile.bar.remove_css_class("nst-animate-reduced")
-            elif level == "reduced":
-                tile.bar.remove_css_class("nst-animate")
-                tile.bar.add_css_class("nst-animate-reduced")
-            else:
-                tile.bar.remove_css_class("nst-animate-reduced")
-                tile.bar.add_css_class("nst-animate")
-        except Exception:
-            pass
         try:
             tile.bar.set_tooltip_text(f"{pct:.0f}%")
         except Exception:

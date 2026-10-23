@@ -14,11 +14,11 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
   latency, signal strength, retransmits, bufferbloat) plus a scheduled capacity
   probe. Distinguishes "slow" from "busy" (saturated link) from "broken" (idle
   but degraded).
-- **Scrolling trend graph** — crypto-style throughput chart with a gradient fill,
+- **Live trend graph** — crypto-style throughput chart with a gradient fill,
   green/red trend line and a highlighted latest point. Dips below the threshold
   line mark the video-buffering moments.
-- **Data-driven musical bars** — thin animated bars between label and value,
-  bouncing ±15% around a base height proportional to the current value.
+- **Data-driven bars** — thin bars between label and value; width is proportional
+  to the current measurement and changes only when the data changes.
 - **Transparent on black** — fully transparent panel floating on the workspace,
   tokyonight palette, JetBrainsMono Nerd Font.
 - **Fedora Atomic-specific signals** — pending rpm-ostree updates, reboot
