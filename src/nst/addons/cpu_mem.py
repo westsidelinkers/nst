@@ -88,33 +88,6 @@ class CpuMemAddon(AddonModule):
             data["cpu_pct"] = 0.0
 
         try:
-            if sample is not None:
-                ct = getattr(sample, "cpu_temp_c", None)
-                if ct is not None:
-                    data["cpu_temp_c"] = float(ct)
-            # thermal zones
-            temps = []
-            for i in range(8):
-                txt = _read_text(f"/sys/class/thermal/thermal_zone{i}/temp")
-                if txt.strip():
-                    try:
-                        temps.append(float(txt.strip()) / 1000.0)
-                    except ValueError:
-                        pass
-            if temps:
-                data.setdefault("cpu_temp_c", max(temps))
-            # fallback thermal_zone0
-            if "cpu_temp_c" not in data:
-                txt = _read_text("/sys/class/thermal/thermal_zone0/temp")
-                if txt.strip():
-                    try:
-                        data["cpu_temp_c"] = float(txt.strip()) / 1000.0
-                    except ValueError:
-                        pass
-        except Exception:
-            pass
-
-        try:
             mem = _parse_meminfo(_read_text("/proc/meminfo"))
             total_kb = mem.get("MemTotal", 0.0)
             avail_kb = mem.get("MemAvailable", mem.get("MemFree", 0.0))
@@ -161,15 +134,20 @@ class CpuMemAddon(AddonModule):
             return None
         d = self._data or {}
         cpu = d.get("cpu_pct", 0)
-        temp = d.get("cpu_temp_c", 0)
-        mem = d.get("mem_pct", 0)
-        used = d.get("disk_used_bytes", 0)
-        total = d.get("disk_total_bytes", 0)
-        free = d.get("disk_free_bytes", 0)
+        mem_used = d.get("mem_used_mb", 0)
+        mem_total = d.get("mem_total_mb", 0)
+        mem_avail = d.get("mem_avail_mb", 0)
+        disk_used = d.get("disk_used_bytes", 0)
+        disk_total = d.get("disk_total_bytes", 0)
+        disk_free = d.get("disk_free_bytes", 0)
         try:
-            text = f"CPU {cpu:.0f}%  {temp:.0f}\u00b0C   Mem {mem:.0f}%   Disk {used / (1024**3):.1f}/{total / (1024**3):.1f} GB ({free / (1024**3):.1f} GB free)"
+            text = (
+                f"CPU {cpu:.0f}%  "
+                f"Mem {mem_used:.0f}/{mem_total:.0f} MB ({mem_avail:.0f} MB free)  "
+                f"Disk {disk_used / (1024**3):.1f}/{disk_total / (1024**3):.1f} GB ({disk_free / (1024**3):.1f} GB free)"
+            )
         except Exception:
-            text = f"CPU {cpu:.0f}%  {temp:.0f}\u00b0C   Mem {mem:.0f}%"
+            text = f"CPU {cpu:.0f}%"
         return Gtk.Label(label=text, xalign=0)
 
 

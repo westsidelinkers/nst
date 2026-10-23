@@ -40,6 +40,7 @@ if _LAYER_SHELL_AVAILABLE:
     try:
         gi.require_version("Gtk4LayerShell", "1.0")
         from gi.repository import Gtk4LayerShell
+
         GtkLayerShell = Gtk4LayerShell
     except Exception:  # pragma: no cover - environment dependent
         Gtk4LayerShell = None
@@ -60,7 +61,8 @@ class NetworkPanel(Gtk.Window):
         super().__init__(**kwargs)
 
         self.set_decorated(False)
-        self.set_default_size(434, 172)
+        # 508 = measured populated content width; the longest DISK tile drives it.
+        self.set_default_size(508, 334)
 
         self._sample = None
         self._verdict = None
@@ -98,6 +100,7 @@ class NetworkPanel(Gtk.Window):
         # Heartbeat graph for the collapsed view.
         try:
             from nst.ui.heartbeat import HeartbeatGraph
+
             self.heartbeat = HeartbeatGraph()
         except Exception:
             self.heartbeat = Gtk.Box()
@@ -112,7 +115,7 @@ class NetworkPanel(Gtk.Window):
         self.heartbeat_box = self.heartbeat
 
         # Title row: status dot, Wi-Fi icon, SSID title, verdict chip.
-        self.title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         try:
             self.title_row.add_css_class("nst-title-row")
         except Exception:
@@ -133,11 +136,12 @@ class NetworkPanel(Gtk.Window):
         try:
             self.wifi_icon.add_css_class("nst-wifi-icon")
             self.wifi_icon.set_margin_start(0)
-            self.wifi_icon.set_margin_end(8)
-            self.wifi_icon.set_margin_top(1)
-            self.wifi_icon.set_margin_bottom(1)
+            self.wifi_icon.set_margin_end(10)
+            self.wifi_icon.set_margin_top(2)
+            self.wifi_icon.set_margin_bottom(2)
             try:
                 self.wifi_icon.set_width_chars(1)
+                self.wifi_icon.set_max_width_chars(1)
             except Exception:
                 pass
         except Exception:
@@ -148,8 +152,8 @@ class NetworkPanel(Gtk.Window):
             self.title_label.add_css_class("nst-title")
             self.title_label.set_xalign(0.0)
             self.title_label.set_hexpand(True)
-            self.title_label.set_margin_start(2)
-            self.title_label.set_margin_end(10)
+            self.title_label.set_margin_start(4)
+            self.title_label.set_margin_end(12)
             self.title_label.set_margin_top(2)
             self.title_label.set_margin_bottom(2)
             try:
@@ -162,7 +166,7 @@ class NetworkPanel(Gtk.Window):
         self.verdict_label = Gtk.Label(label="\u2014")
         try:
             self.verdict_label.add_css_class("nst-verdict-chip")
-            self.verdict_label.set_margin_start(10)
+            self.verdict_label.set_margin_start(12)
             self.verdict_label.set_margin_end(2)
             self.verdict_label.set_margin_top(2)
             self.verdict_label.set_margin_bottom(2)
@@ -170,7 +174,12 @@ class NetworkPanel(Gtk.Window):
         except Exception:
             pass
 
-        for _w in (self.status_dot, self.wifi_icon, self.title_label, self.verdict_label):
+        for _w in (
+            self.status_dot,
+            self.wifi_icon,
+            self.title_label,
+            self.verdict_label,
+        ):
             try:
                 self.title_row.append(_w)
             except Exception:
@@ -286,22 +295,46 @@ class NetworkPanel(Gtk.Window):
 
     def _trigger_probe(self):
         cb = None
-        for attr in ("run_probe_callback", "on_run_probe", "probe_callback", "run_probe",
-                     "_run_probe", "_on_run_probe", "on_probe", "_on_probe"):
+        for attr in (
+            "run_probe_callback",
+            "on_run_probe",
+            "probe_callback",
+            "run_probe",
+            "_run_probe",
+            "_on_run_probe",
+            "on_probe",
+            "_on_probe",
+        ):
             cb = getattr(self, attr, None)
             if callable(cb):
                 break
         if cb is None and getattr(self, "application", None) is not None:
             app = self.application
-            for name in ("run_probe_now", "run_probe", "trigger_probe", "on_run_probe",
-                             "on_probe", "probe"):
+            for name in (
+                "run_probe_now",
+                "run_probe",
+                "trigger_probe",
+                "on_run_probe",
+                "on_probe",
+                "probe",
+            ):
                 cb = getattr(app, name, None)
                 if callable(cb):
                     break
-        if cb is None and getattr(self, "app", None) is not None and self.app is not self.application:
+        if (
+            cb is None
+            and getattr(self, "app", None) is not None
+            and self.app is not self.application
+        ):
             app = self.app
-            for name in ("run_probe_now", "run_probe", "trigger_probe", "on_run_probe",
-                         "on_probe", "probe"):
+            for name in (
+                "run_probe_now",
+                "run_probe",
+                "trigger_probe",
+                "on_run_probe",
+                "on_probe",
+                "probe",
+            ):
                 cb = getattr(app, name, None)
                 if callable(cb):
                     break
@@ -321,14 +354,14 @@ class NetworkPanel(Gtk.Window):
             controller = None
         try:
             keyval = int(keyval)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             try:
                 keyval = int(getattr(keyval, "value", keyval))
             except Exception:
                 keyval = 0
         try:
             state = int(state or 0)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             state = 0
 
         ctrl = False
@@ -395,7 +428,7 @@ class NetworkPanel(Gtk.Window):
 
     def show_collapsed(self):
         self._expanded_visible = False
-        self.set_default_size(434, 172)
+        self.set_default_size(508, 334)
         ls = self._layer_shell()
         if ls is not None:
             try:
@@ -426,7 +459,13 @@ class NetworkPanel(Gtk.Window):
                 pass
         if getattr(self, "expanded_panel", None) is not None:
             try:
-                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices, self._modules)
+                self.expanded_panel.update(
+                    self._sample,
+                    self._verdict,
+                    self._probe_result,
+                    self._devices,
+                    self._modules,
+                )
             except Exception:
                 pass
             try:
@@ -450,7 +489,9 @@ class NetworkPanel(Gtk.Window):
         self.show_collapsed()
         return self
 
-    def update(self, sample=None, verdict=None, probe_result=None, devices=None, modules=None):
+    def update(
+        self, sample=None, verdict=None, probe_result=None, devices=None, modules=None
+    ):
         self._sample = sample
         if modules is not None:
             self._modules = list(modules)
@@ -475,6 +516,7 @@ class NetworkPanel(Gtk.Window):
 
         # Refresh collapsed title/verdict/heartbeat from sample/verdict.
         try:
+
             def _attr(obj, *names, default=None):
                 if obj is None:
                     return default
@@ -491,10 +533,23 @@ class NetworkPanel(Gtk.Window):
                 return default
 
             # Title (SSID / interface).
-            title_text = _attr(sample, "ssid", "ssid_name", "wifi_ssid", "interface", "iface", default=None)
+            title_text = _attr(
+                sample,
+                "ssid",
+                "ssid_name",
+                "wifi_ssid",
+                "interface",
+                "iface",
+                default=None,
+            )
             if title_text is None and self.config is not None:
-                title_text = getattr(self.config, "interface", None) or getattr(self.config, "ssid", None)
-            if title_text is not None and getattr(self, "title_label", None) is not None:
+                title_text = getattr(self.config, "interface", None) or getattr(
+                    self.config, "ssid", None
+                )
+            if (
+                title_text is not None
+                and getattr(self, "title_label", None) is not None
+            ):
                 try:
                     self.title_label.set_label(str(title_text))
                 except Exception:
@@ -525,7 +580,16 @@ class NetworkPanel(Gtk.Window):
                     "RADIO_DEGRADED": "bad",
                 }
                 cls = mapping.get(state, "warn")
-                managed = {"ok", "good", "healthy", "warn", "warning", "bad", "error", "critical"}
+                managed = {
+                    "ok",
+                    "good",
+                    "healthy",
+                    "warn",
+                    "warning",
+                    "bad",
+                    "error",
+                    "critical",
+                }
                 for c in managed:
                     try:
                         self.verdict_label.remove_css_class(c)
@@ -551,7 +615,9 @@ class NetworkPanel(Gtk.Window):
             hb = getattr(self, "heartbeat", None)
             if sample is not None and hb is not None and hasattr(hb, "add_sample"):
                 try:
-                    rx_bps = _attr(sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0)
+                    rx_bps = _attr(
+                        sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0
+                    )
                     hb.add_sample(float(rx_bps or 0.0) / 1e6)
                 except Exception:
                     pass
@@ -565,7 +631,13 @@ class NetworkPanel(Gtk.Window):
                 pass
         if getattr(self, "expanded_panel", None) is not None:
             try:
-                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices, self._modules)
+                self.expanded_panel.update(
+                    self._sample,
+                    self._verdict,
+                    self._probe_result,
+                    self._devices,
+                    self._modules,
+                )
             except Exception:
                 pass
 
@@ -577,6 +649,8 @@ class NetworkPanel(Gtk.Window):
 
     def set_verdict(self, verdict=None):
         try:
-            self.update(self._sample, verdict, self._probe_result, self._devices, self._modules)
+            self.update(
+                self._sample, verdict, self._probe_result, self._devices, self._modules
+            )
         except Exception:
             self._verdict = verdict

@@ -14,8 +14,9 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
   latency, signal strength, retransmits, bufferbloat) plus a scheduled capacity
   probe. Distinguishes "slow" from "busy" (saturated link) from "broken" (idle
   but degraded).
-- **Scrolling heartbeat graph** — ECG-style waveform showing throughput over time.
-  Dips below the threshold line mark the video-buffering moments.
+- **Scrolling trend graph** — crypto-style throughput chart with a gradient fill,
+  green/red trend line and a highlighted latest point. Dips below the threshold
+  line mark the video-buffering moments.
 - **Data-driven musical bars** — thin animated bars between label and value,
   bouncing ±15% around a base height proportional to the current value.
 - **Transparent on black** — fully transparent panel floating on the workspace,
@@ -23,7 +24,7 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
 - **Fedora Atomic-specific signals** — pending rpm-ostree updates, reboot
   required, failed systemd units, firmware updates.
 - **Addon modules** — bufferbloat (LAN vs WAN), public IP / ISP, battery health
-  (74% of design capacity on this machine), CPU / RAM / temp / disk, IPv6
+  (74% of design capacity on this machine), CPU usage / RAM usage / disk, IPv6
   status, device count.
 - **Three-tier measurement** — continuous passive (free), scheduled capacity
   probe (8×5 MB, every 8 h, 120 MB/day budget), on-demand full speedtest.
@@ -31,8 +32,8 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
 - **Bufferbloat detection** — LAN +39.9 ms (Wi-Fi queues under load), WAN +0.4 ms
   (ISP has effective AQM). Explains why videos stutter even when throughput looks
   fine.
-- **Sci-fi aesthetic** — corner brackets, scanlines, circuit traces, oscilloscope
-  waveform, optional full-screen ambient layer.
+- **Sci-fi aesthetic** — corner brackets, scanlines, circuit traces, crypto-style
+  trend chart, optional full-screen ambient layer.
 
 ## Target environment
 

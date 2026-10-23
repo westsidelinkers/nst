@@ -251,25 +251,34 @@ class HeartbeatGraph(Gtk.DrawingArea):
         if cairo is None:
             return
 
+        # Inner padding so the line and latest-point halo don't clip.
+        pad_y = 6.0
+        plot_h = max(1.0, height - (2.0 * pad_y))
+        plot_bottom = height - pad_y
+        pad_x = 6.0
+        plot_w = max(1.0, width - (2.0 * pad_x))
+
+        # Translucent chart pane (keeps the panel transparency visible).
         try:
-            cr.set_source_rgb(0.05, 0.07, 0.12)
+            cr.set_source_rgba(0.04, 0.05, 0.09, 0.22)
             cr.rectangle(0, 0, width, height)
             cr.fill()
         except Exception:
             pass
 
+        # Faint grid: 3 horizontal and 5 vertical lines.
         try:
-            cr.set_source_rgba(0.35, 0.4, 0.5, 0.35)
+            cr.set_source_rgba(0.55, 0.62, 0.78, 0.10)
             cr.set_line_width(1.0)
             for i in range(1, 4):
-                y = height * i / 4.0
+                y = pad_y + plot_h * i / 4.0
                 cr.move_to(0, y)
                 cr.line_to(width, y)
                 cr.stroke()
             for i in range(1, 6):
                 x = width * i / 6.0
-                cr.move_to(x, 0)
-                cr.line_to(x, height)
+                cr.move_to(x, pad_y)
+                cr.line_to(x, plot_bottom)
                 cr.stroke()
         except Exception:
             pass
@@ -280,10 +289,11 @@ class HeartbeatGraph(Gtk.DrawingArea):
         if max_val < self.threshold + 1.0:
             max_val = self.threshold + 1.0
 
+        # Faint dashed threshold line.
         try:
-            ty = height - (self.threshold / max_val) * height
-            cr.set_source_rgba(0.95, 0.25, 0.25, 0.9)
-            cr.set_line_width(1.5)
+            ty = plot_bottom - (self.threshold / max_val) * plot_h
+            cr.set_source_rgba(0.95, 0.25, 0.25, 0.40)
+            cr.set_line_width(1.0)
             try:
                 cr.set_dash([6.0, 4.0])
             except Exception:
@@ -305,25 +315,48 @@ class HeartbeatGraph(Gtk.DrawingArea):
         if n == 1:
             xs = [width / 2.0]
         else:
-            xs = [i / (n - 1) * width for i in range(n)]
-        ys = [height - (v / max_val) * height for v in floats]
+            xs = [pad_x + i / (n - 1) * plot_w for i in range(n)]
+        ys = [plot_bottom - (v / max_val) * plot_h for v in floats]
 
+        # Trend color: first vs last sample.
+        first = floats[0]
+        last = floats[-1]
+        if last > first:
+            color = (0.62, 0.85, 0.44)  # rising -> green
+        elif last < first:
+            color = (0.97, 0.46, 0.56)  # falling -> red
+        else:
+            color = (0.49, 0.75, 1.0)  # flat -> cyan/blue
+
+        # Area fill with a vertical gradient from the line down to the plot base.
         try:
-            cr.move_to(xs[0], height)
+            cr.move_to(xs[0], plot_bottom)
             for x, y in zip(xs, ys):
                 cr.line_to(x, y)
-            cr.line_to(xs[-1], height)
+            cr.line_to(xs[-1], plot_bottom)
             cr.close_path()
-            grad = cairo.LinearGradient(0, 0, 0, height)
-            grad.add_color_stop_rgba(0, 0.2, 0.6, 1.0, 0.35)
-            grad.add_color_stop_rgba(1, 0.2, 0.6, 1.0, 0.05)
+            grad = cairo.LinearGradient(0, pad_y, 0, plot_bottom)
+            grad.add_color_stop_rgba(0, color[0], color[1], color[2], 0.32)
+            grad.add_color_stop_rgba(1, color[0], color[1], color[2], 0.0)
             cr.set_source(grad)
             cr.fill()
         except Exception:
             pass
 
+        # Subtle glow stroke underneath the main line.
         try:
-            cr.set_source_rgba(0.2, 0.85, 1.0, 1.0)
+            cr.set_source_rgba(color[0], color[1], color[2], 0.18)
+            cr.set_line_width(5.0)
+            cr.move_to(xs[0], ys[0])
+            for x, y in zip(xs[1:], ys[1:]):
+                cr.line_to(x, y)
+            cr.stroke()
+        except Exception:
+            pass
+
+        # Solid trend line.
+        try:
+            cr.set_source_rgba(color[0], color[1], color[2], 1.0)
             cr.set_line_width(2.0)
             cr.move_to(xs[0], ys[0])
             for x, y in zip(xs[1:], ys[1:]):
@@ -332,18 +365,34 @@ class HeartbeatGraph(Gtk.DrawingArea):
         except Exception:
             pass
 
+        # Faint dashed "last price" guide in the trend color.
         try:
-            cr.set_source_rgba(0.95, 0.25, 0.25, 1.0)
-            for x, y, v in zip(xs, ys, floats):
-                if v < self.threshold:
-                    cr.arc(x, y, 3.0, 0, 6.283185307179586)
-                    cr.fill()
+            cr.set_source_rgba(color[0], color[1], color[2], 0.30)
+            cr.set_line_width(1.0)
+            try:
+                cr.set_dash([3.0, 4.0])
+            except Exception:
+                pass
+            cr.move_to(0, ys[-1])
+            cr.line_to(width, ys[-1])
+            cr.stroke()
+            try:
+                cr.set_dash([])
+            except Exception:
+                pass
         except Exception:
             pass
 
+        # Latest point: glow halo plus solid dot.
         try:
-            cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
-            cr.arc(xs[-1], ys[-1], 4.0, 0, 6.283185307179586)
+            cr.set_source_rgba(color[0], color[1], color[2], 0.22)
+            cr.arc(xs[-1], ys[-1], 6.0, 0, 6.283185307179586)
+            cr.fill()
+        except Exception:
+            pass
+        try:
+            cr.set_source_rgba(color[0], color[1], color[2], 1.0)
+            cr.arc(xs[-1], ys[-1], 3.0, 0, 6.283185307179586)
             cr.fill()
         except Exception:
             pass

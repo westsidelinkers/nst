@@ -3,14 +3,17 @@
 # Keep this module importable without GTK/GI at import time; GTK is only
 # needed when actually installing the CSS provider.
 
-
 CSS = r"""
-window {
+window,
+window.background,
+window.background.csd,
+window.csd,
+.decoration {
     background-color: transparent;
 }
 
 .nst-panel {
-    background-color: transparent;
+    background: none;
     color: #c0caf5;
     border: 1px solid rgba(122,162,247,.30);
     border-radius: 9px;
@@ -25,7 +28,6 @@ window {
     );
     background-repeat: repeat;
     background-position: 0 0;
-    animation: scan 6s linear infinite;
     margin: 0;
     padding: 10px;
 }
@@ -42,15 +44,15 @@ window {
 }
 
 .nst-wifi-icon {
-    font-size: 12px;
+    font-size: 11px;
     color: #7dcfff;
-    margin: 1px 8px 1px 0;
+    margin: 2px 8px 2px 0;
 }
 
 .nst-title {
     font-size: 11px;
     color: #a9b1d6;
-    margin: 2px 10px 2px 2px;
+    margin: 2px 10px 2px 4px;
 }
 
 .nst-verdict-chip {
@@ -166,8 +168,8 @@ window {
 }
 
 @keyframes scan {
-    0% { background-color: rgba(26,27,38,.96); }
-    100% { background-color: rgba(26,27,38,.96); }
+    0%   { background-position: 0 0; }
+    100% { background-position: 0 4px; }
 }
 
 .nst-corner-bracket {
@@ -232,7 +234,6 @@ window {
 """
 
 
-
 def install_css(display=None):
     """Load the Tokyo Night CSS and bind prefers-reduced-motion.
 
@@ -265,7 +266,7 @@ def install_css(display=None):
     if display is not None:
         try:
             Gtk.StyleContext.add_provider_for_display(
-                display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                display, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
             )
         except Exception:
             pass
@@ -284,8 +285,13 @@ def install_css(display=None):
     return provider
 
 
-def animations_enabled(reduced_motion=False, on_battery=False, battery_pct=100.0,
-                      battery_threshold=30, config=None):
+def animations_enabled(
+    reduced_motion=False,
+    on_battery=False,
+    battery_pct=100.0,
+    battery_threshold=30,
+    config=None,
+):
     """Decide whether non-essential animations should run.
 
     Returns False when reduced motion is requested OR when on battery and

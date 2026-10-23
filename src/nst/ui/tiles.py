@@ -91,6 +91,14 @@ class Tile(Gtk.Box):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=2, *args, **kwargs)
+        try:
+            self.set_hexpand(True)
+        except Exception:
+            pass
+        try:
+            self.set_vexpand(True)
+        except Exception:
+            pass
         self.name = name
         self.tile_name = name
 
@@ -103,6 +111,10 @@ class Tile(Gtk.Box):
         self.track.add_css_class("nst-mus")
         self.track.add_css_class("nst-bar-track")
         self.track.set_size_request(-1, 16)
+        try:
+            self.track.set_hexpand(True)
+        except Exception:
+            pass
         try:
             self.track.set_overflow(Gtk.Overflow.HIDDEN)
         except Exception:
@@ -246,6 +258,30 @@ class TileGrid(Gtk.Grid):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        try:
+            self.set_column_homogeneous(True)
+        except Exception:
+            pass
+        try:
+            self.set_row_homogeneous(True)
+        except Exception:
+            pass
+        try:
+            self.set_column_spacing(6)
+        except Exception:
+            pass
+        try:
+            self.set_row_spacing(6)
+        except Exception:
+            pass
+        try:
+            self.set_hexpand(True)
+        except Exception:
+            pass
+        try:
+            self.set_vexpand(True)
+        except Exception:
+            pass
         self.tiles = {}
         self._state = None
         self.config = None
