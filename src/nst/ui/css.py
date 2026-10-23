@@ -16,15 +16,21 @@ window {
     border-radius: 9px;
     font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
     box-shadow: 0 0 30px rgba(122,162,247,.12), 0 6px 26px rgba(0,0,0,.6);
-    background-image: none;
+    background-image: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(122,162,247,.025) 3px,
+        rgba(122,162,247,.025) 4px
+    );
+    background-repeat: repeat;
+    background-position: 0 0;
+    animation: scan 6s linear infinite;
     margin: 0;
-    padding: 0;
+    padding: 10px;
 }
 
 
-.nst-title-row {
-    spacing: 6px;
-}
 
 .nst-status-dot {
     min-width: 7px;
@@ -38,13 +44,13 @@ window {
 .nst-wifi-icon {
     font-size: 12px;
     color: #7dcfff;
-    margin-right: 6px;
+    margin: 1px 8px 1px 0;
 }
 
 .nst-title {
     font-size: 11px;
     color: #a9b1d6;
-    margin-right: 8px;
+    margin: 2px 10px 2px 2px;
 }
 
 .nst-verdict-chip {
@@ -54,7 +60,7 @@ window {
     background-color: rgba(224,175,104,.10);
     border: 1px solid rgba(224,175,104,.30);
     color: #e0af68;
-    margin-left: 8px;
+    margin-left: 10px;
 }
 .nst-verdict-chip.ok,
 .nst-verdict-chip.good,
@@ -138,7 +144,6 @@ window {
     margin: 3px 0 4px;
     border-radius: 2px;
     background-color: rgba(122,162,247,.04);
-    overflow: hidden;
 }
 
 .nst-bar {

@@ -122,7 +122,7 @@ class NetworkPanel(Gtk.Window):
         try:
             self.status_dot.add_css_class("nst-status-dot")
             self.status_dot.set_size_request(7, 7)
-            self.status_dot.set_margin_start(2)
+            self.status_dot.set_margin_start(0)
             self.status_dot.set_margin_end(6)
             self.status_dot.set_margin_top(2)
             self.status_dot.set_margin_bottom(2)
@@ -132,10 +132,14 @@ class NetworkPanel(Gtk.Window):
         self.wifi_icon = Gtk.Label(label="\uf1eb")
         try:
             self.wifi_icon.add_css_class("nst-wifi-icon")
-            self.wifi_icon.set_margin_start(2)
-            self.wifi_icon.set_margin_end(6)
-            self.wifi_icon.set_margin_top(2)
-            self.wifi_icon.set_margin_bottom(2)
+            self.wifi_icon.set_margin_start(0)
+            self.wifi_icon.set_margin_end(8)
+            self.wifi_icon.set_margin_top(1)
+            self.wifi_icon.set_margin_bottom(1)
+            try:
+                self.wifi_icon.set_width_chars(1)
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -145,19 +149,24 @@ class NetworkPanel(Gtk.Window):
             self.title_label.set_xalign(0.0)
             self.title_label.set_hexpand(True)
             self.title_label.set_margin_start(2)
-            self.title_label.set_margin_end(8)
+            self.title_label.set_margin_end(10)
             self.title_label.set_margin_top(2)
             self.title_label.set_margin_bottom(2)
+            try:
+                self.title_label.set_ellipsize(Gtk.EllipsizeMode.END)
+            except Exception:
+                pass
         except Exception:
             pass
 
         self.verdict_label = Gtk.Label(label="\u2014")
         try:
             self.verdict_label.add_css_class("nst-verdict-chip")
-            self.verdict_label.set_margin_start(8)
+            self.verdict_label.set_margin_start(10)
             self.verdict_label.set_margin_end(2)
             self.verdict_label.set_margin_top(2)
             self.verdict_label.set_margin_bottom(2)
+            self.verdict_label.set_halign(Gtk.Align.END)
         except Exception:
             pass
 
