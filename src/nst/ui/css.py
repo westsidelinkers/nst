@@ -10,14 +10,12 @@ window {
 }
 
 .nst-panel {
-    background: rgba(26,27,38,.96);
+    background-color: rgba(26,27,38,.96);
     color: #c0caf5;
     border: 1px solid rgba(122,162,247,.30);
     border-radius: 9px;
     font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
     box-shadow: 0 0 30px rgba(122,162,247,.12), 0 6px 26px rgba(0,0,0,.6);
-    position: relative;
-    overflow: hidden;
     background-image: repeating-linear-gradient(
         0deg,
         transparent 0px,
@@ -25,10 +23,9 @@ window {
         rgba(122,162,247,.025) 3px,
         rgba(122,162,247,.025) 4px
     );
+    background-position: 0 0;
     animation: scan 6s linear infinite;
 }
-
-window { background: transparent; }
 
 .nst-title {
     font-size: 11px;
@@ -41,27 +38,27 @@ window { background: transparent; }
     padding: 2px 8px;
     border-radius: 5px;
     letter-spacing: .04em;
-    background: rgba(224,175,104,.14);
+    background-color: rgba(224,175,104,.14);
     border: 1px solid rgba(224,175,104,.35);
     color: #e0af68;
 }
 .nst-verdict-chip.ok,
 .nst-verdict-chip.good,
 .nst-verdict-chip.healthy {
-    background: rgba(158,206,106,.14);
+    background-color: rgba(158,206,106,.14);
     border-color: rgba(158,206,106,.38);
     color: #9ece6a;
 }
 .nst-verdict-chip.warn,
 .nst-verdict-chip.warning {
-    background: rgba(224,175,104,.14);
+    background-color: rgba(224,175,104,.14);
     border-color: rgba(224,175,104,.35);
     color: #e0af68;
 }
 .nst-verdict-chip.bad,
 .nst-verdict-chip.error,
 .nst-verdict-chip.critical {
-    background: rgba(247,118,142,.14);
+    background-color: rgba(247,118,142,.14);
     border-color: rgba(247,118,142,.38);
     color: #f7768e;
 }
@@ -71,33 +68,24 @@ window { background: transparent; }
 .nst-verdict-bad { color: #f7768e; }
 
 .nst-tile {
-    background: rgba(122,162,247,.05);
+    background-color: rgba(122,162,247,.05);
     color: #c0caf5;
     border: 1px solid rgba(122,162,247,.08);
     border-radius: 7px;
     padding: 7px 8px 8px;
-    position: relative;
-    overflow: hidden;
-}
-.nst-tile::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(122,162,247,.06) 0%, transparent 60%);
+    background-image: linear-gradient(180deg, rgba(122,162,247,.06) 0%, transparent 60%);
 }
 
 .nst-tile .k {
     font-size: 9px;
     color: #a9b1d6;
     letter-spacing: .05em;
-    position: relative;
     margin-bottom: 4px;
 }
 .nst-tile .v {
     font-size: 15px;
     font-weight: 600;
     line-height: 1.25;
-    position: relative;
     color: #c0caf5;
 }
 .nst-tile .v small {
@@ -109,7 +97,6 @@ window { background: transparent; }
     font-size: 8.5px;
     color: #a9b1d6;
     margin-top: 1px;
-    position: relative;
 }
 
 .nst-tile .v.good { color: #9ece6a; }
@@ -118,60 +105,50 @@ window { background: transparent; }
 
 .nst-tile.good .nst-mus .nst-bar,
 .nst-tile .nst-bar.nst-good {
-    background: linear-gradient(90deg, #9ece6a, rgba(158,206,106,.5));
+    background-image: linear-gradient(90deg, #9ece6a, rgba(158,206,106,.5)), linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
 }
 .nst-tile.warn .nst-mus .nst-bar,
 .nst-tile .nst-bar.nst-warn {
-    background: linear-gradient(90deg, #e0af68, rgba(224,175,104,.5));
+    background-image: linear-gradient(90deg, #e0af68, rgba(224,175,104,.5)), linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
 }
 .nst-tile.bad .nst-mus .nst-bar,
 .nst-tile .nst-bar.nst-bad {
-    background: linear-gradient(90deg, #f7768e, rgba(247,118,142,.5));
+    background-image: linear-gradient(90deg, #f7768e, rgba(247,118,142,.5)), linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
 }
 .nst-tile.neutral .nst-mus .nst-bar,
 .nst-tile .nst-bar.nst-neutral {
-    background: linear-gradient(90deg, #7aa2f7, rgba(122,162,247,.5));
+    background-image: linear-gradient(90deg, #7aa2f7, rgba(122,162,247,.5)), linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
 }
 
 .nst-mus {
-    height: 16px;
-    position: relative;
+    min-height: 16px;
     margin: 3px 0 4px;
-    overflow: hidden;
     border-radius: 2px;
-    background: rgba(122,162,247,.06);
+    background-color: rgba(122,162,247,.06);
 }
 
 .nst-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
+    min-height: 16px;
     border-radius: 2px;
     transform-origin: left center;
-    animation: musBounce 1.3s ease-in-out infinite;
+    animation: musBounce 1.3s ease-in-out infinite, shimmer 1.8s linear infinite;
+    background-size: 100% 100%, 200% 100%;
+    background-position: 0 0, 0 0;
+    background-repeat: no-repeat;
 }
-.nst-bar::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
-    animation: sweep 1.8s linear infinite;
+.nst-bar.nst-animate {
+    animation: musBounce 1.3s ease-in-out infinite, shimmer 1.8s linear infinite;
+    transform-origin: left center;
 }
 
 @keyframes musBounce {
-    0%, 100% { transform: scaleX(.85); }
+    0%, 100% { transform: scaleX(0.85); }
     50% { transform: scaleX(1.15); }
 }
 
-@keyframes nst-bar-pulse {
-    0% { transform: scaleY(0.85); }
-    50% { transform: scaleY(1.15); }
-    100% { transform: scaleY(0.85); }
-}
-@keyframes sweep {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+@keyframes shimmer {
+    0% { background-position: 0 0, -100% 0; }
+    100% { background-position: 0 0, 100% 0; }
 }
 
 @keyframes scan {
@@ -179,13 +156,8 @@ window { background: transparent; }
     100% { background-position: 0 100%; }
 }
 
-@keyframes nst-scanline {
-    0% { background-position: 0 0; }
-    100% { background-position: 0 100%; }
-}
-
 .nst-bar.nst-animate {
-    animation: musBounce 1.3s ease-in-out infinite;
+    animation: musBounce 1.3s ease-in-out infinite, shimmer 1.8s linear infinite;
     transform-origin: left center;
 }
 
@@ -195,31 +167,25 @@ window { background: transparent; }
 }
 
 .nst-footer {
-    display: flex;
-    gap: 10px;
     font-size: 10px;
     color: #a9b1d6;
     margin-top: 7px;
-    position: relative;
 }
 
 .nst-heartbeat,
 .nst-heartbeat-container,
 .nst-heartbeat-box {
-    height: 34px;
-    overflow: hidden;
-    position: relative;
+    min-height: 34px;
     margin-top: 8px;
     border-radius: 4px;
-    background: rgba(122,162,247,.04);
+    background-color: rgba(122,162,247,.04);
 }
 
 .nst-status-dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
+    min-width: 7px;
+    min-height: 7px;
     border-radius: 50%;
-    background: #9ece6a;
+    background-color: #9ece6a;
 }
 
 /* width buckets (min-width based) */
@@ -249,15 +215,9 @@ window { background: transparent; }
     animation: musBounce 0.4s ease-in-out 1;
 }
 
-.nst-corner-bracket {
-    color: #7aa2f7;
-    font-family: monospace;
-}
-
 @media (prefers-reduced-motion: reduce) {
     * {
         animation: none;
-        transition: none;
     }
 }
 """

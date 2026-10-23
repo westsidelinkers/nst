@@ -435,7 +435,11 @@ class TileGrid(Gtk.Grid):
             except Exception:
                 pass
         try:
-            tile.bar.set_size_request(-1, -1)
+            tile.track.set_size_request(-1, 16)
+        except Exception:
+            pass
+        try:
+            tile.bar.set_size_request(-1, 16)
         except Exception:
             pass
         try:

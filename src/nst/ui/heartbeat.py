@@ -179,7 +179,7 @@ class HeartbeatGraph(Gtk.DrawingArea):
             return False
         return True
 
-    def _draw(self, area, cr, width, height):
+    def _draw(self, area, cr, width, height, user_data=None):
         try:
             self._draw_impl(cr, width, height)
         except Exception:
@@ -295,14 +295,21 @@ class HeartbeatGraph(Gtk.DrawingArea):
             pass
 
 
-    def draw(self, area, cr, width, height):
-        return self._draw(area, cr, width, height)
+    def draw(self, *args, **kwargs):
+        if len(args) == 3:
+            return self._draw(self, args[0], args[1], args[2], None, **kwargs)
+        return self._draw(*args, **kwargs)
 
-    def on_draw(self, area, cr, width, height):
-        return self._draw(area, cr, width, height)
+    def on_draw(self, *args, **kwargs):
+        if len(args) == 3:
+            return self._draw(self, args[0], args[1], args[2], None, **kwargs)
+        return self._draw(*args, **kwargs)
 
-    def do_draw(self, cr, width, height):
-        return self._draw(self, cr, width, height)
+    def do_draw(self, *args, **kwargs):
+        # Support both (cr, width, height) and (area, cr, width, height[, user_data]).
+        if len(args) == 3:
+            return self._draw(self, args[0], args[1], args[2], None, **kwargs)
+        return self._draw(*args, **kwargs)
 
 
 __all__ = ["HeartbeatGraph"]
