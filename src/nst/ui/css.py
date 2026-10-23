@@ -1,9 +1,7 @@
 """Tokyo Night CSS for the nst panel."""
 
-import gi
-
-gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+# Keep this module importable without GTK/GI at import time; GTK is only
+# needed when actually installing the CSS provider.
 
 
 CSS = r"""
@@ -90,8 +88,16 @@ def install_css(display=None):
     """Load the Tokyo Night CSS and bind prefers-reduced-motion.
 
     Returns the :class:`Gtk.CssProvider` so callers can keep a reference.
-    Handles a missing display gracefully.
+    Handles a missing display/GTK gracefully.
     """
+    try:
+        import gi
+
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk
+    except Exception:
+        return None
+
     provider = Gtk.CssProvider()
     try:
         provider.load_from_string(CSS)

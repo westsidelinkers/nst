@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.request
 from typing import Any
 
@@ -15,8 +16,24 @@ class PublicIpAddon(AddonModule):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._data: dict = {}
+        self._cache_ttl: float = 600.0
+        try:
+            if self.config is not None:
+                self._cache_ttl = float(getattr(self.config, "public_ip_cache_ttl", self._cache_ttl))
+        except Exception:
+            pass
+        self._cached_data: dict = {}
+        self._last_attempt: float = 0.0
 
     def update(self, sample: Any = None) -> dict:
+        now = time.monotonic()
+        # Cache network results to avoid stalling the main thread.
+        if self._last_attempt > 0 and (now - self._last_attempt) < self._cache_ttl:
+            self._data = dict(self._cached_data)
+            return dict(self._data)
+
+        self._last_attempt = now
+
         # Prefer sample-provided value when available.
         ip = None
         try:
@@ -51,8 +68,13 @@ class PublicIpAddon(AddonModule):
         # Fallback: use sample public_ip if fetch failed.
         if "ip" not in data and ip:
             data["ip"] = ip
-        self._data = data
-        return dict(data)
+
+        if data:
+            self._cached_data = dict(data)
+        if not data and self._cached_data:
+            data = dict(self._cached_data)
+        self._data = dict(data) if data else dict(self._cached_data)
+        return dict(self._data) if self._data else {}
 
     def render(self) -> Any:
         import os

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from nst.addons.base import AddonModule
@@ -14,8 +15,24 @@ class BufferbloatAddon(AddonModule):
         super().__init__(*args, **kwargs)
         self._result: Any = None
         self._data: dict = {}
+        self._cache_ttl: float = 300.0
+        try:
+            if self.config is not None:
+                self._cache_ttl = float(getattr(self.config, "bufferbloat_cache_ttl", self._cache_ttl))
+        except Exception:
+            pass
+        self._cached_data: dict = {}
+        self._last_attempt: float = 0.0
 
     def update(self, sample: Any = None) -> dict:
+        now = time.monotonic()
+        # Return cached result within TTL to avoid running the (expensive)
+        # bufferbloat measurement on every T0 sample.
+        if self._last_attempt > 0 and (now - self._last_attempt) < self._cache_ttl:
+            self._data = dict(self._cached_data)
+            return dict(self._data)
+
+        self._last_attempt = now
         try:
             from nst.measurement.bufferbloat import measure_bufferbloat
 
@@ -31,8 +48,13 @@ class BufferbloatAddon(AddonModule):
                 "success": getattr(result, "success", False),
             }
             self._data = data
+            self._cached_data = dict(data)
             return data
         except Exception:
+            # Throttle failures too: keep any previous cached data.
+            if self._cached_data:
+                self._data = dict(self._cached_data)
+                return dict(self._data)
             return dict(self._data)
 
     def render(self) -> Any:

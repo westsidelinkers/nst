@@ -1,5 +1,18 @@
 """GTK4 layer-shell panel window."""
 
+import logging
+
+# Load the layer-shell CDLL *before* importing gi, per the plan/target names.
+# Keep a guarded fallback so the module stays importable without the library.
+_LAYER_SHELL_AVAILABLE = False
+try:
+    from ctypes import CDLL
+
+    CDLL("libgtk4-layer-shell.so.0")
+    _LAYER_SHELL_AVAILABLE = True
+except Exception:  # pragma: no cover - environment dependent
+    _LAYER_SHELL_AVAILABLE = False
+
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -10,7 +23,6 @@ try:
 except Exception:  # pragma: no cover
     Gdk = None
 
-import logging
 from nst.ui.tiles import TileGrid
 
 try:
@@ -20,14 +32,16 @@ except Exception:  # pragma: no cover - environment dependent
 
 # Layer-shell is optional at import time; keep the module importable even
 # when the library/version is unavailable or conflicts with the loaded Gtk.
-try:
-    from ctypes import CDLL
-
-    CDLL("libgtk-layer-shell.so.0")
-    gi.require_version("GtkLayerShell", "0.1")
-    from gi.repository import GtkLayerShell
-except Exception:  # pragma: no cover - environment dependent
-    GtkLayerShell = None
+Gtk4LayerShell = None
+GtkLayerShell = None
+if _LAYER_SHELL_AVAILABLE:
+    try:
+        gi.require_version("Gtk4LayerShell", "1.0")
+        from gi.repository import Gtk4LayerShell
+        GtkLayerShell = Gtk4LayerShell
+    except Exception:  # pragma: no cover - environment dependent
+        Gtk4LayerShell = None
+        GtkLayerShell = None
 
 
 logger = logging.getLogger("nst")
@@ -96,7 +110,7 @@ class NetworkPanel(Gtk.Window):
         self._setup_layer_shell()
 
     def _layer_shell(self):
-        return globals().get("GtkLayerShell")
+        return globals().get("Gtk4LayerShell") or globals().get("GtkLayerShell")
 
     def _setup_layer_shell(self):
         ls = self._layer_shell()

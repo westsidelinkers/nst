@@ -26,6 +26,8 @@ def compute_verdict(signals: VerdictSignals) -> Verdict:
     s = signals
 
     # 1. RADIO_DEGRADED (highest severity)
+    # Note: display-level signal banding uses -67 dBm (yellow) / -75 dBm (red),
+    # but the verdict treats only < -75 dBm as radio-degraded (see README/docs).
     if (
         s.signal_dbm < -75
         or s.rx_dropped_rate > 1.0
@@ -44,6 +46,8 @@ def compute_verdict(signals: VerdictSignals) -> Verdict:
         return Verdict.HIGH_LATENCY
 
     # 3. ISP_LIMITED
+    # Note: plan/docs mention signal >= -67 for "radio healthy"; implementation
+    # uses >= -75 to stay consistent with the radio-degraded cutoff above.
     if (
         s.throughput_mbps is not None
         and s.throughput_mbps < 30

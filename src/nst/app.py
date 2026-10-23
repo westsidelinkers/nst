@@ -389,10 +389,19 @@ class NstApplication(Gtk.Application):
                     bufferbloat_wan = _to_float(data.get("delta_wan_ms", 0.0), 0.0)
                     has_bufferbloat = True
 
+        # Carry last probe throughput into the verdict when available.
+        probe_tp = None
+        try:
+            down = _attr(self.probe_result, "down_mbps", default=None)
+            if down is not None:
+                probe_tp = _to_float(down, 0.0)
+        except Exception:
+            probe_tp = None
+
         # Compute verdict from sample.
         try:
             signals = VerdictSignals(
-                throughput_mbps=None,
+                throughput_mbps=probe_tp,
                 ping_avg_ms=_to_float(_attr(sample, "ping_avg_ms", default=0.0)),
                 jitter_ms=_to_float(_attr(sample, "jitter_ms", default=0.0)),
                 signal_dbm=_to_float(_attr(sample, "signal_dbm", default=0.0)),

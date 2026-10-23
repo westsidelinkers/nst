@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import time
 from typing import Any
 
 from nst.addons.base import AddonModule
@@ -25,14 +26,29 @@ class OsUpdatesAddon(AddonModule):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._data: dict = {}
+        self._cache_ttl: float = 1800.0
+        try:
+            if self.config is not None:
+                self._cache_ttl = float(getattr(self.config, "os_updates_cache_ttl", self._cache_ttl))
+        except Exception:
+            pass
+        self._cached_data: dict = {}
+        self._last_attempt: float = 0.0
 
     def update(self, sample: Any = None) -> dict:
+        now = time.monotonic()
+        if self._last_attempt > 0 and (now - self._last_attempt) < self._cache_ttl:
+            self._data = dict(self._cached_data)
+            return dict(self._data)
+
+        self._last_attempt = now
         data: dict = {"pending_updates": 0, "reboot_needed": False, "available": False}
         try:
             out = _run(["rpm-ostree", "status", "--json"])
             text = out.strip()
             if not text:
                 self._data = data
+                self._cached_data = dict(data)
                 return dict(data)
             try:
                 info = json.loads(text)
@@ -49,6 +65,7 @@ class OsUpdatesAddon(AddonModule):
                             continue
             if not isinstance(info, dict):
                 self._data = data
+                self._cached_data = dict(data)
                 return dict(data)
             data["available"] = True
             # rpm-ostree status json: deployments list; check for pending.
@@ -76,7 +93,12 @@ class OsUpdatesAddon(AddonModule):
         except Exception:
             pass
         self._data = data
-        return dict(data)
+        if data:
+            self._cached_data = dict(data)
+        if not data and self._cached_data:
+            data = dict(self._cached_data)
+            self._data = dict(data)
+        return dict(self._data) if self._data else dict(data)
 
     def render(self) -> Any:
         import os
