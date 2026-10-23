@@ -29,6 +29,11 @@ except Exception:  # pragma: no cover - environment dependent
     HeartbeatGraph = None
 
 logger = logging.getLogger("nst")
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logger.addHandler(_handler)
+logger.setLevel(logging.INFO)
 
 _DEFAULT_APP_ID = "org.nst.NetworkStatusPanel"
 
@@ -270,6 +275,20 @@ class NstApplication(Gtk.Application):
                 except Exception:
                     pass
 
+    def handle_key(self, *args, **kwargs):
+        if self.panel is not None and hasattr(self.panel, "handle_key"):
+            try:
+                return self.panel.handle_key(*args, **kwargs)
+            except Exception:
+                pass
+        return False
+
+    def handle_key_press(self, *args, **kwargs):
+        return self.handle_key(*args, **kwargs)
+
+    def on_key_pressed(self, *args, **kwargs):
+        return self.handle_key(*args, **kwargs)
+
     def run_probe_now(self) -> None:
         thread = threading.Thread(target=self._probe_worker, daemon=True)
         thread.start()
@@ -278,12 +297,36 @@ class NstApplication(Gtk.Application):
     # Callbacks
     # ------------------------------------------------------------------ #
     def on_t0_sample(self, sample: Any) -> Any:
-        # Update addon modules.
+        if sample is None:
+            # GLib idle callbacks should not repeat.
+            return False
+
+        # Update addon modules, capturing their results.
+        module_results = {}
         for module in list(self.modules):
             try:
-                module.update(sample)
+                module_results[module] = module.update(sample)
             except Exception:
-                pass
+                module_results[module] = None
+
+        # Extract bufferbloat deltas for the verdict engine.
+        bufferbloat_lan = 0.0
+        bufferbloat_wan = 0.0
+        has_bufferbloat = False
+        for module in list(self.modules):
+            name = getattr(module, "name", "")
+            cls_name = type(module).__name__.lower()
+            if "bufferbloat" in str(name).lower() or "bufferbloat" in cls_name:
+                data = module_results.get(module)
+                if not isinstance(data, dict):
+                    try:
+                        data = getattr(module, "_data", None)
+                    except Exception:
+                        data = None
+                if isinstance(data, dict):
+                    bufferbloat_lan = _to_float(data.get("delta_lan_ms", 0.0), 0.0)
+                    bufferbloat_wan = _to_float(data.get("delta_wan_ms", 0.0), 0.0)
+                    has_bufferbloat = True
 
         # Compute verdict from sample.
         try:
@@ -293,6 +336,10 @@ class NstApplication(Gtk.Application):
                 jitter_ms=_to_float(_attr(sample, "jitter_ms", default=0.0)),
                 signal_dbm=_to_float(_attr(sample, "signal_dbm", default=0.0)),
                 rx_dropped_rate=_to_float(_attr(sample, "rx_dropped_rate", default=0.0)),
+                retransmits=int(_to_float(_attr(sample, "tx_retries", "retransmits", default=0), 0)),
+                beacon_loss=int(_to_float(_attr(sample, "beacon_loss", default=0), 0)),
+                bufferbloat_lan_ms=bufferbloat_lan if has_bufferbloat else 0.0,
+                bufferbloat_wan_ms=bufferbloat_wan if has_bufferbloat else 0.0,
             )
             self.verdict = compute_verdict(signals)
         except Exception as exc:
@@ -308,6 +355,7 @@ class NstApplication(Gtk.Application):
                     verdict=self.verdict,
                     probe_result=self.probe_result,
                     devices=self.devices,
+                    modules=self.modules,
                 )
             except Exception:
                 try:
@@ -360,6 +408,7 @@ class NstApplication(Gtk.Application):
                     verdict=self.verdict,
                     probe_result=self.probe_result,
                     devices=self.devices,
+                    modules=self.modules,
                 )
             except Exception:
                 try:

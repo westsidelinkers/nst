@@ -5,6 +5,11 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
+try:
+    from gi.repository import Gdk
+except Exception:  # pragma: no cover
+    Gdk = None
+
 from nst.ui.tiles import TileGrid
 
 try:
@@ -57,6 +62,17 @@ class NetworkPanel(Gtk.Window):
         except Exception:
             pass
 
+        self._modules = []
+
+        # Keyboard shortcuts.
+        try:
+            controller = Gtk.EventControllerKey()
+            controller.connect("key-pressed", self._on_key_pressed)
+            self.add_controller(controller)
+            self._key_controller = controller
+        except Exception:
+            self._key_controller = None
+
         self._setup_layer_shell()
 
     def _layer_shell(self):
@@ -106,7 +122,7 @@ class NetworkPanel(Gtk.Window):
                 pass
         if getattr(self, "expanded_panel", None) is not None:
             try:
-                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices)
+                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices, self._modules)
             except Exception:
                 pass
             try:
@@ -115,7 +131,7 @@ class NetworkPanel(Gtk.Window):
                 pass
         self.present()
 
-    def update(self, sample=None, verdict=None, probe_result=None, devices=None):
+    def update(self, sample=None, verdict=None, probe_result=None, devices=None, modules=None):
         self._sample = sample
         if verdict is not None:
             self._verdict = verdict
@@ -123,6 +139,8 @@ class NetworkPanel(Gtk.Window):
             self._probe_result = probe_result
         if devices is not None:
             self._devices = list(devices)
+        if modules is not None:
+            self._modules = list(modules)
         if getattr(self, "tile_grid", None) is not None:
             try:
                 self.tile_grid.update(self._sample, self._verdict)
@@ -130,9 +148,15 @@ class NetworkPanel(Gtk.Window):
                 pass
         if getattr(self, "expanded_panel", None) is not None:
             try:
-                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices)
+                self.expanded_panel.update(self._sample, self._verdict, self._probe_result, self._devices, self._modules)
             except Exception:
                 pass
+
+    def handle_key(self, keyval, state=0, keycode=0):
+        return self._on_key_pressed(None, keyval, keycode, state)
+
+    def handle_key_press(self, keyval, state=0, keycode=0):
+        return self.handle_key(keyval, state, keycode)
 
     def set_verdict(self, verdict=None):
         self._verdict = verdict
@@ -143,6 +167,6 @@ class NetworkPanel(Gtk.Window):
                 pass
         if getattr(self, "expanded_panel", None) is not None:
             try:
-                self.expanded_panel.update(self._sample, verdict, self._probe_result, self._devices)
+                self.expanded_panel.update(self._sample, verdict, self._probe_result, self._devices, self._modules)
             except Exception:
                 pass

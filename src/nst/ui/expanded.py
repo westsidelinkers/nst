@@ -256,6 +256,17 @@ class ExpandedPanel(Gtk.Box):
         self.device_labels = {}
         self.devices_section = self.devices
 
+        # ---- Addons section ----
+        self.addons = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        self.addons.add_css_class("nst-expanded-addons")
+        self.addons_title = Gtk.Label(label="Addons")
+        self.addons_title.set_xalign(0.0)
+        self.addons.append(self.addons_title)
+        self.addons_box = self.addons
+        self.addons_section = self.addons
+        self.module_widgets = {}
+        self._modules = []
+
         # ---- Actions section ----
         self.actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.actions.add_css_class("nst-expanded-actions")
@@ -294,6 +305,7 @@ class ExpandedPanel(Gtk.Box):
         self.append(self.bars)
         self.append(self.latency)
         self.append(self.devices)
+        self.append(self.addons)
         self.append(self.actions)
 
         # Optional callbacks setters.
@@ -401,7 +413,7 @@ class ExpandedPanel(Gtk.Box):
     # ------------------------------------------------------------------ #
     # Public API
     # ------------------------------------------------------------------ #
-    def update(self, sample=None, verdict=None, probe_result=None, devices=None):
+    def update(self, sample=None, verdict=None, probe_result=None, devices=None, modules=None):
         self._sample = sample
         if verdict is not None:
             self._verdict = verdict
@@ -409,6 +421,8 @@ class ExpandedPanel(Gtk.Box):
             self._probe_result = probe_result
         if devices is not None:
             self._devices = list(devices)
+        if modules is not None:
+            self._modules = list(modules)
 
         # ---- Hero ----
         rx_bps = _to_float(_attr(sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0))
@@ -554,11 +568,47 @@ class ExpandedPanel(Gtk.Box):
                 self.devices.append(lbl)
                 self.device_labels[str(name)] = lbl
 
+        # ---- Addons ----
+        try:
+            self._clear_box(self.addons)
+            try:
+                self.addons.append(self.addons_title)
+            except Exception:
+                pass
+            self.module_widgets = {}
+            mods = self._modules
+            for mod in mods:
+                try:
+                    try:
+                        mod.update(sample)
+                    except Exception:
+                        pass
+                    widget = None
+                    try:
+                        widget = mod.render()
+                    except Exception:
+                        widget = None
+                    if widget is not None:
+                        try:
+                            self.addons.append(widget)
+                        except Exception:
+                            pass
+                        self.module_widgets[getattr(mod, "name", str(mod))] = widget
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         return self
 
     # aliases for update
     def refresh(self, *args, **kwargs):
         return self.update(*args, **kwargs)
+
+
+    def set_modules(self, modules):
+        self._modules = list(modules) if modules is not None else []
+        return self
 
 
 __all__ = ["ExpandedPanel", "BarsSection"]
