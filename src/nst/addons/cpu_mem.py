@@ -2,11 +2,35 @@
 
 from __future__ import annotations
 
+import os
 import time
 import shutil
 from typing import Any
 
 from nst.addons.base import AddonModule
+
+
+def _disk_usage():
+    """Return usage for the largest real filesystem we can find.
+
+    "/" can be a tiny composefs/overlay root (for example inside a toolbox),
+    so prefer the user's home then /var, and only fall back to "/".
+    """
+    candidates = []
+    for path in (os.path.expanduser("~"), "/var", "/"):
+        if path and path not in candidates:
+            candidates.append(path)
+    fallback = None
+    for path in candidates:
+        try:
+            usage = shutil.disk_usage(path)
+        except Exception:
+            continue
+        if fallback is None:
+            fallback = usage
+        if usage.total >= 1024 ** 3:
+            return usage
+    return fallback
 
 
 def _read_text(path: str) -> str:
@@ -43,6 +67,12 @@ class CpuMemAddon(AddonModule):
         self._data: dict = {}
         self._prev_cpu: tuple[float, float] | None = None
         self._prev_time: float | None = None
+        # Prime the /proc/stat baseline so the first update reports usage
+        # over the startup interval instead of 0%.
+        try:
+            self._cpu_usage()
+        except Exception:
+            pass
 
     def _cpu_usage(self) -> float:
         text = _read_text("/proc/stat")
@@ -109,7 +139,9 @@ class CpuMemAddon(AddonModule):
 
         # Disk space (best effort).
         try:
-            du = shutil.disk_usage("/")
+            du = _disk_usage()
+            if du is None:
+                raise RuntimeError("no disk usage available")
             data["disk_total_bytes"] = int(du.total)
             data["disk_used_bytes"] = int(du.used)
             data["disk_free_bytes"] = int(du.free)
@@ -140,11 +172,18 @@ class CpuMemAddon(AddonModule):
         disk_used = d.get("disk_used_bytes", 0)
         disk_total = d.get("disk_total_bytes", 0)
         disk_free = d.get("disk_free_bytes", 0)
+        if disk_total and disk_total > 0:
+            disk_text = (
+                f"Disk {disk_used / (1024**3):.1f}/{disk_total / (1024**3):.1f} GB "
+                f"({disk_free / (1024**3):.1f} GB free)"
+            )
+        else:
+            disk_text = "Disk \u2014"
         try:
             text = (
                 f"CPU {cpu:.0f}%  "
                 f"Mem {mem_used:.0f}/{mem_total:.0f} MB ({mem_avail:.0f} MB free)  "
-                f"Disk {disk_used / (1024**3):.1f}/{disk_total / (1024**3):.1f} GB ({disk_free / (1024**3):.1f} GB free)"
+                f"{disk_text}"
             )
         except Exception:
             text = f"CPU {cpu:.0f}%"

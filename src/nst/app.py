@@ -382,6 +382,16 @@ class NstApplication(Gtk.Application):
             except Exception:
                 module_results[module] = None
 
+        # Feed the CPU addon's computed usage into the sample used by the
+        # collapsed tiles, so the CPU tile shows usage instead of temperature.
+        for _module_data in module_results.values():
+            if isinstance(_module_data, dict) and _module_data.get("cpu_pct") is not None:
+                try:
+                    setattr(sample, "cpu_pct", _module_data["cpu_pct"])
+                except Exception:
+                    pass
+                break
+
         # Extract bufferbloat deltas for the verdict engine.
         bufferbloat_lan = 0.0
         bufferbloat_wan = 0.0

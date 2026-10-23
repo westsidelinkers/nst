@@ -1,3 +1,4 @@
+import os
 import re
 import threading
 import time
@@ -14,6 +15,29 @@ except Exception:  # pragma: no cover - environment dependent
     GLib = None
 
 from nst.measurement.throughput import parse_proc_net_dev, compute_rate
+
+
+def _disk_usage():
+    """Return usage for the largest real filesystem we can find.
+
+    "/" can be a tiny composefs/overlay root (for example inside a toolbox),
+    so prefer the user's home then /var, and only fall back to "/".
+    """
+    candidates = []
+    for path in (os.path.expanduser("~"), "/var", "/"):
+        if path and path not in candidates:
+            candidates.append(path)
+    fallback = None
+    for path in candidates:
+        try:
+            usage = shutil.disk_usage(path)
+        except Exception:
+            continue
+        if fallback is None:
+            fallback = usage
+        if usage.total >= 1024 ** 3:
+            return usage
+    return fallback
 
 
 def parse_iw_link(text: str) -> dict:
@@ -433,7 +457,9 @@ class T0Monitor:
 
         # Disk space (best effort).
         try:
-            du = shutil.disk_usage("/")
+            du = _disk_usage()
+            if du is None:
+                raise RuntimeError("no disk usage available")
             sample.disk_total_bytes = int(du.total)
             sample.disk_used_bytes = int(du.used)
             sample.disk_free_bytes = int(du.free)

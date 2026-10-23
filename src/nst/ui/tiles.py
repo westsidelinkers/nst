@@ -512,15 +512,11 @@ class TileGrid(Gtk.Grid):
             state=signal_state,
         )
 
-        # CPU (usage percent, falling back to temperature)
+        # CPU (usage percent)
         cpu_usage = _attr(sample, "cpu_pct", "cpu_percent", "cpu_usage", "cpu", default=None)
-        cpu_temp = _attr(sample, "cpu_temp_c", "cpu_temp", default=None)
         if cpu_usage is not None:
             cpu = _to_float(cpu_usage)
             cpu_value = f"{cpu:.0f}%"
-        elif cpu_temp is not None:
-            cpu = _to_float(cpu_temp)
-            cpu_value = f"{cpu:.0f}\u00b0C"
         else:
             cpu = 0.0
             cpu_value = "\u2014"
@@ -550,9 +546,13 @@ class TileGrid(Gtk.Grid):
         disk_total_bytes = _attr(sample, "disk_total_bytes", default=None)
         disk_used_bytes = _attr(sample, "disk_used_bytes", default=None)
         disk_free_bytes = _attr(sample, "disk_free_bytes", default=None)
-        if disk_total_bytes is not None and disk_used_bytes is not None and disk_free_bytes is not None:
+        try:
+            total_bytes = _to_float(disk_total_bytes)
+        except Exception:
+            total_bytes = 0.0
+        if total_bytes > 0 and disk_used_bytes is not None and disk_free_bytes is not None:
             try:
-                total_gb = _to_float(disk_total_bytes) / (1024.0 ** 3)
+                total_gb = total_bytes / (1024.0 ** 3)
                 used_gb = _to_float(disk_used_bytes) / (1024.0 ** 3)
                 free_gb = _to_float(disk_free_bytes) / (1024.0 ** 3)
                 disk_value = f"{used_gb:.1f}/{total_gb:.1f} GB"
@@ -560,10 +560,12 @@ class TileGrid(Gtk.Grid):
             except Exception:
                 disk_value = f"{disk_free:.0f}%"
                 disk_subtitle = "free"
-        else:
-            # Fall back to free percentage when byte counts are unavailable.
+        elif disk_free > 0:
             disk_value = f"{disk_free:.0f}%"
             disk_subtitle = "free"
+        else:
+            disk_value = "\u2014"
+            disk_subtitle = "disk"
         if disk_free >= 20:
             disk_state = "good"
         elif disk_free >= 10:
