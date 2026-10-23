@@ -1,9 +1,16 @@
 import sys
+
+from nst.app import NstApplication
 from nst.config import load_config
 
-def main():
-    config = load_config(sys.argv[1] if len(sys.argv) > 1 else None)
-    print(f"nst config loaded: probe every {config.probe_interval_hours}h, t0 every {config.t0_interval_seconds}s")
+
+def main(argv=None) -> int:
+    if argv is None:
+        argv = sys.argv
+    config_path = argv[1] if len(argv) > 1 else None
+    app = NstApplication(config_path=config_path)
+    return app.run(argv)
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
