@@ -76,6 +76,26 @@ def _normalize_state(state):
     return mapping.get(s, s)
 
 
+class _AnimationLevel(str):
+    """String-valued animation level that is also callable (like animations_enabled)."""
+
+    def __new__(cls, value, owner=None):
+        return super().__new__(cls, value)
+
+    def __init__(self, value, owner=None):
+        self._owner = owner
+
+    def __call__(self, *args, **kwargs):
+        if self._owner is not None:
+            try:
+                return self._owner._compute_animation_level(*args, **kwargs)
+            except Exception:
+                pass
+        if not args and not kwargs:
+            return str(self)
+        return str(self)
+
+
 def _verdict_str(verdict):
     if verdict is None:
         return None
@@ -155,6 +175,10 @@ class ExpandedPanel(Gtk.Box):
         self.battery_pct = 100.0
         self.battery_threshold = 30
         self._animate = True
+        self._animation_level = "full"
+        self.animation_level = _AnimationLevel("full", self)
+        self._animation_tier = self._animation_level
+        self.animation_tier = self.animation_level
         self._sample = None
 
         # ---- Hero section ----
@@ -403,10 +427,18 @@ class ExpandedPanel(Gtk.Box):
         except Exception:
             pass
         try:
-            if getattr(self, "_animate", True):
-                bar_widget.add_css_class("nst-animate")
-            else:
+            level = getattr(self, "_animation_level", None)
+            if level is None:
+                level = self._compute_animation_level()
+            if not getattr(self, "_animate", True):
                 bar_widget.remove_css_class("nst-animate")
+                bar_widget.remove_css_class("nst-animate-reduced")
+            elif level == "reduced":
+                bar_widget.remove_css_class("nst-animate")
+                bar_widget.add_css_class("nst-animate-reduced")
+            else:
+                bar_widget.remove_css_class("nst-animate-reduced")
+                bar_widget.add_css_class("nst-animate")
         except Exception:
             pass
         try:
@@ -478,6 +510,62 @@ class ExpandedPanel(Gtk.Box):
     def animation_enabled(self, *args, **kwargs):
         return self.animations_enabled(*args, **kwargs)
 
+    @property
+    def animation_level(self):
+        return _AnimationLevel(self._compute_animation_level(), self)
+
+    @animation_level.setter
+    def animation_level(self, value):
+        try:
+            self._animation_level = str(value)
+        except Exception:
+            self._animation_level = value
+
+    @property
+    def animation_tier(self):
+        return self.animation_level
+
+    @animation_tier.setter
+    def animation_tier(self, value):
+        try:
+            self._animation_level = str(value)
+        except Exception:
+            self._animation_level = value
+
+    def _compute_animation_level(self, sample=None, reduced_motion=None, on_battery=None,
+                                battery_pct=None, battery_threshold=None, config=None):
+        cfg = config if config is not None else self.config
+        if sample is not None:
+            try:
+                if on_battery is None:
+                    v = _attr(sample, "on_battery", default=None)
+                    if v is not None:
+                        on_battery = bool(v)
+                if battery_pct is None:
+                    v = _attr(sample, "battery_pct", default=None)
+                    if v is not None:
+                        battery_pct = _to_float(v, self.battery_pct)
+            except Exception:
+                pass
+        rm = self._reduced_motion_active() if reduced_motion is None else bool(reduced_motion)
+        ob = self.on_battery if on_battery is None else bool(on_battery)
+        bp = self.battery_pct if battery_pct is None else _to_float(battery_pct, self.battery_pct)
+        bt = self.battery_threshold if battery_threshold is None else battery_threshold
+        try:
+            if cfg is not None:
+                bt = getattr(cfg, "battery_threshold", bt)
+                if getattr(cfg, "animation_enabled", True) is False:
+                    return "off"
+        except Exception:
+            pass
+        if rm:
+            return "off"
+        if ob and bp < float(bt):
+            return "off"
+        if ob:
+            return "reduced"
+        return "full"
+
     # ------------------------------------------------------------------ #
     # Public API
     # ------------------------------------------------------------------ #
@@ -502,6 +590,10 @@ class ExpandedPanel(Gtk.Box):
             except Exception:
                 pass
         self._animate = self.animations_enabled(sample=sample)
+        self._animation_level = self._compute_animation_level(sample=sample)
+        self.animation_level = _AnimationLevel(self._animation_level, self)
+        self._animation_tier = self._animation_level
+        self.animation_tier = self.animation_level
 
         # ---- Hero ----
         rx_bps = _to_float(_attr(sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0))

@@ -133,6 +133,7 @@ class NetworkPanel(Gtk.Window):
         try:
             self.title_label.add_css_class("nst-title")
             self.title_label.set_xalign(0.0)
+            self.title_label.set_hexpand(True)
         except Exception:
             pass
 

@@ -51,6 +51,10 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
 
 ## Notes
 
+- **Layer shell runtime:** `gtk4-layer-shell` 1.3.0 must be installed on the host and the
+  app must run with the host Python/GTK stack. This container only ships the GTK3
+  layer-shell library, so layer-shell features are unavailable here.
+
 - Signal strength thresholds: the UI marks signal as good at >= -67 dBm and warn at
   >= -75 dBm, while the verdict engine treats only < -75 dBm as radio-degraded
   (so the -67..-75 dBm band is a display-level warning that does not by itself

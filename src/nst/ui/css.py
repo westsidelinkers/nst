@@ -134,6 +134,10 @@ window {
     animation: musBounce 1.3s ease-in-out infinite;
 }
 
+.nst-bar.nst-animate-reduced {
+    animation: musBounce 2.4s ease-in-out infinite;
+}
+
 @keyframes musBounce {
     0%, 100% { transform: scaleX(0.85); }
     50% { transform: scaleX(1.15); }

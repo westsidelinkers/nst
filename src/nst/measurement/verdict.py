@@ -46,8 +46,8 @@ def compute_verdict(signals: VerdictSignals) -> Verdict:
         return Verdict.HIGH_LATENCY
 
     # 3. ISP_LIMITED
-    # Note: plan/docs mention signal >= -67 for "radio healthy"; implementation
-    # uses >= -75 to stay consistent with the radio-degraded cutoff above.
+    # Radio is considered healthy when signal_dbm >= -75 dBm (the radio-degraded
+    # cutoff above), with no retransmits/beacon loss and low drops/WAN bloat.
     if (
         s.throughput_mbps is not None
         and s.throughput_mbps < 30

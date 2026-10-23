@@ -374,7 +374,7 @@ Create `src/nst/measurement/verdict.py` with `Verdict` enum (HEALTHY, ISP_LIMITE
 Verdict logic (in severity order):
 1. RADIO_DEGRADED if: signal_dbm < -75 OR rx_dropped_rate > 1.0 OR retransmits > 0 OR beacon_loss > 0
 2. HIGH_LATENCY if: ping_avg_ms > 50 OR jitter_ms > 20 OR bufferbloat_lan_ms > 10 (with throughput >= 15 or throughput is None)
-3. ISP_LIMITED if: throughput is not None AND throughput < 30 AND radio is healthy (signal >= -67, retransmits 0, beacon_loss 0, rx_dropped_rate <= 0.2) AND WAN latency normal (bufferbloat_wan_ms <= 5)
+3. ISP_LIMITED if: throughput is not None AND throughput < 30 AND radio is healthy (signal >= -75, retransmits 0, beacon_loss 0, rx_dropped_rate <= 0.2) AND WAN latency normal (bufferbloat_wan_ms <= 5)
 4. HEALTHY (default)
 
 - [ ] **Step 4: Run test to verify it passes**
