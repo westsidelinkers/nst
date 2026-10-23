@@ -22,3 +22,18 @@ def test_animations_enabled_combined_requires_both():
     assert animations_enabled(reduced_motion=False, on_battery=True, battery_pct=80, battery_threshold=30) is True
     # ac power enables
     assert animations_enabled(reduced_motion=False, on_battery=False, battery_pct=5, battery_threshold=30) is True
+
+
+def test_animations_disabled_config_flag():
+    from nst.config import Config
+    from nst.ui.css import animations_enabled
+    cfg = Config(animation_enabled=False)
+    assert animations_enabled(reduced_motion=False, on_battery=False, battery_pct=100, config=cfg) is False
+
+
+def test_animations_disabled_battery_threshold_config():
+    from nst.config import Config
+    from nst.ui.css import animations_enabled
+    cfg = Config(animation_enabled=True, battery_threshold=50)
+    assert animations_enabled(reduced_motion=False, on_battery=True, battery_pct=40, config=cfg) is False
+    assert animations_enabled(reduced_motion=False, on_battery=True, battery_pct=60, config=cfg) is True

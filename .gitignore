@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+*.egg-info/
+uv.lock
+build/
+dist/
+*.egg

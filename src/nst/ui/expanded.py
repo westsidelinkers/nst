@@ -6,6 +6,12 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
 try:
+    from nst.ui.css import animations_enabled as _animations_enabled
+except Exception:
+    def _animations_enabled(*a, **k):
+        return True
+
+try:
     from gi.repository import GLib
 except Exception:  # pragma: no cover - environment dependent
     GLib = None
@@ -143,6 +149,13 @@ class ExpandedPanel(Gtk.Box):
         self._verdict = None
         self._probe_result = None
         self._devices = []
+        self.config = None
+        self.reduced_motion = None
+        self.on_battery = False
+        self.battery_pct = 100.0
+        self.battery_threshold = 30
+        self._animate = True
+        self._sample = None
 
         # ---- Hero section ----
         self.hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -390,6 +403,13 @@ class ExpandedPanel(Gtk.Box):
         except Exception:
             pass
         try:
+            if getattr(self, "_animate", True):
+                bar_widget.add_css_class("nst-animate")
+            else:
+                bar_widget.remove_css_class("nst-animate")
+        except Exception:
+            pass
+        try:
             bar_widget.set_tooltip_text(f"{pct:.0f}%")
         except Exception:
             pass
@@ -410,6 +430,54 @@ class ExpandedPanel(Gtk.Box):
                 pass
             child = nxt
 
+    def _reduced_motion_active(self):
+        if self.reduced_motion is not None:
+            return bool(self.reduced_motion)
+        try:
+            settings = None
+            try:
+                from gi.repository import Gtk as _Gtk
+                settings = _Gtk.Settings.get_default()
+            except Exception:
+                settings = None
+            if settings is not None:
+                return bool(getattr(settings, "gtk_interface_reduced_motion", False))
+        except Exception:
+            pass
+        return False
+
+    def animations_enabled(self, sample=None, reduced_motion=None, on_battery=None,
+                           battery_pct=None, battery_threshold=None, config=None):
+        cfg = config if config is not None else self.config
+        if sample is not None:
+            try:
+                if on_battery is None:
+                    v = _attr(sample, "on_battery", default=None)
+                    if v is not None:
+                        on_battery = bool(v)
+                if battery_pct is None:
+                    v = _attr(sample, "battery_pct", default=None)
+                    if v is not None:
+                        battery_pct = _to_float(v, self.battery_pct)
+            except Exception:
+                pass
+        rm = self._reduced_motion_active() if reduced_motion is None else bool(reduced_motion)
+        ob = self.on_battery if on_battery is None else bool(on_battery)
+        bp = self.battery_pct if battery_pct is None else _to_float(battery_pct, self.battery_pct)
+        bt = self.battery_threshold if battery_threshold is None else battery_threshold
+        try:
+            if cfg is not None:
+                bt = getattr(cfg, "battery_threshold", bt)
+                if getattr(cfg, "animation_enabled", True) is False:
+                    return False
+        except Exception:
+            pass
+        return _animations_enabled(reduced_motion=rm, on_battery=ob, battery_pct=bp,
+                                 battery_threshold=bt, config=cfg)
+
+    def animation_enabled(self, *args, **kwargs):
+        return self.animations_enabled(*args, **kwargs)
+
     # ------------------------------------------------------------------ #
     # Public API
     # ------------------------------------------------------------------ #
@@ -423,6 +491,17 @@ class ExpandedPanel(Gtk.Box):
             self._devices = list(devices)
         if modules is not None:
             self._modules = list(modules)
+        if sample is not None:
+            try:
+                v = _attr(sample, "on_battery", default=None)
+                if v is not None:
+                    self.on_battery = bool(v)
+                v = _attr(sample, "battery_pct", default=None)
+                if v is not None:
+                    self.battery_pct = _to_float(v, self.battery_pct)
+            except Exception:
+                pass
+        self._animate = self.animations_enabled(sample=sample)
 
         # ---- Hero ----
         rx_bps = _to_float(_attr(sample, "rx_bps", "rx_rate_bps", "download_bps", default=0.0))
@@ -580,7 +659,13 @@ class ExpandedPanel(Gtk.Box):
             for mod in mods:
                 try:
                     try:
-                        mod.update(sample)
+                        last = getattr(mod, "_nst_last_sample", object())
+                        if last is not sample:
+                            mod.update(sample)
+                            try:
+                                setattr(mod, "_nst_last_sample", sample)
+                            except Exception:
+                                pass
                     except Exception:
                         pass
                     widget = None

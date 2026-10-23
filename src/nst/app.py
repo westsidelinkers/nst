@@ -96,6 +96,9 @@ class NstApplication(Gtk.Application):
         self.probe_history: list = []
         self.devices: list = []
         self._last_sample: Any = None
+        self._last_bufferbloat_lan: float = 0.0
+        self._last_bufferbloat_wan: float = 0.0
+        self._last_has_bufferbloat: bool = False
 
         self._quitting = False
         self._probe_timer_id = None
@@ -168,6 +171,22 @@ class NstApplication(Gtk.Application):
         except Exception:
             self.heartbeat = None
         self.heartbeat_graph = self.heartbeat
+        # Wire panel <-> app callbacks.
+        try:
+            self.panel.application = self
+            self.panel.app = self
+            self.panel.config = self.config
+            self.panel.run_probe_callback = self.run_probe_now
+            self.panel.on_run_probe = self.run_probe_now
+            self.panel.probe_callback = self.run_probe_now
+            tg = getattr(self.panel, "tile_grid", None)
+            if tg is not None:
+                tg.config = self.config
+            if self.expanded_panel is not None:
+                self.expanded_panel.config = self.config
+                self.expanded_panel.on_run_speed_test = self.run_probe_now
+        except Exception as exc:
+            logger.debug("Panel wiring failed: %s", exc)
 
         # Load addon modules.
         try:
@@ -195,8 +214,9 @@ class NstApplication(Gtk.Application):
         try:
             if self.expanded_panel is not None:
                 self.expanded_panel.on_run_speed_test = self.run_probe_now
-        except Exception:
-            pass
+                self.expanded_panel.set_callbacks(run=self.run_probe_now)
+        except Exception as exc:
+            logger.debug("Expanded wiring failed: %s", exc)
 
         # Show panel.
         try:
@@ -214,16 +234,27 @@ class NstApplication(Gtk.Application):
         try:
             self._probe_timer_id = GLib.timeout_add_seconds(5, self._probe_tick)
         except Exception:
+            logger.debug("Probe scheduling via timer failed; falling back to thread")
             try:
                 self._probe_thread = threading.Thread(target=self._probe_worker, daemon=True)
                 self._probe_thread.start()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Probe thread start failed: %s", exc)
 
     def _probe_tick(self) -> bool:
         if self._quitting:
             return False
-        self._probe_worker()
+        # Spawn the probe in a background thread; never block the main loop.
+        try:
+            thread = threading.Thread(target=self._probe_worker, daemon=True)
+            self._probe_thread = thread
+            thread.start()
+        except Exception as exc:
+            logger.debug("Failed to spawn probe worker: %s", exc)
+            try:
+                self._probe_worker()
+            except Exception as exc2:
+                logger.debug("Probe worker failed: %s", exc2)
         # Repeat every probe_interval_hours.
         try:
             hours = int(getattr(self.config, "probe_interval_hours", 8))
@@ -234,8 +265,8 @@ class NstApplication(Gtk.Application):
         # Use a one-shot reschedule to avoid overlapping.
         try:
             GLib.timeout_add_seconds(hours * 3600, self._probe_tick)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Probe reschedule failed: %s", exc)
         return False
 
     def _probe_worker(self) -> None:
@@ -293,6 +324,36 @@ class NstApplication(Gtk.Application):
         thread = threading.Thread(target=self._probe_worker, daemon=True)
         thread.start()
 
+    def show_expanded(self) -> None:
+        if self.panel is not None:
+            try:
+                self.panel.show_expanded()
+            except Exception as exc:
+                logger.debug("show_expanded failed: %s", exc)
+
+    def show_collapsed(self) -> None:
+        if self.panel is not None:
+            try:
+                self.panel.show_collapsed()
+            except Exception as exc:
+                logger.debug("show_collapsed failed: %s", exc)
+
+    def toggle_expanded(self) -> None:
+        if self.panel is not None:
+            try:
+                if hasattr(self.panel, "toggle_expanded"):
+                    self.panel.toggle_expanded()
+                else:
+                    self.panel.show_expanded()
+            except Exception as exc:
+                logger.debug("toggle_expanded failed: %s", exc)
+
+    def open_expanded(self) -> None:
+        self.show_expanded()
+
+    def close_expanded(self) -> None:
+        self.show_collapsed()
+
     # ------------------------------------------------------------------ #
     # Callbacks
     # ------------------------------------------------------------------ #
@@ -345,6 +406,10 @@ class NstApplication(Gtk.Application):
         except Exception as exc:
             logger.debug("Verdict compute failed: %s", exc)
 
+        self._last_bufferbloat_lan = bufferbloat_lan if has_bufferbloat else 0.0
+        self._last_bufferbloat_wan = bufferbloat_wan if has_bufferbloat else 0.0
+        self._last_has_bufferbloat = has_bufferbloat
+
         self._last_sample = sample
 
         # Update panel.
@@ -386,7 +451,7 @@ class NstApplication(Gtk.Application):
         except Exception:
             pass
 
-        # Update verdict using probe throughput + last T0 latency.
+        # Update verdict using probe throughput + last T0 latency/context.
         try:
             down = _attr(result, "down_mbps", default=None)
             sample = self._last_sample
@@ -396,6 +461,9 @@ class NstApplication(Gtk.Application):
                 jitter_ms=_to_float(_attr(sample, "jitter_ms", default=0.0)),
                 signal_dbm=_to_float(_attr(sample, "signal_dbm", default=0.0)),
                 rx_dropped_rate=_to_float(_attr(sample, "rx_dropped_rate", default=0.0)),
+                retransmits=int(_to_float(_attr(sample, "tx_retries", "retransmits", default=0), 0)),
+                bufferbloat_lan_ms=self._last_bufferbloat_lan if self._last_has_bufferbloat else 0.0,
+                bufferbloat_wan_ms=self._last_bufferbloat_wan if self._last_has_bufferbloat else 0.0,
             )
             self.verdict = compute_verdict(signals)
         except Exception as exc:
