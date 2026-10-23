@@ -103,6 +103,10 @@ class Tile(Gtk.Box):
         self.track.add_css_class("nst-mus")
         self.track.add_css_class("nst-bar-track")
         self.track.set_size_request(-1, 16)
+        try:
+            self.track.set_overflow(Gtk.Overflow.HIDDEN)
+        except Exception:
+            pass
 
         self.bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.bar.add_css_class("nst-bar")

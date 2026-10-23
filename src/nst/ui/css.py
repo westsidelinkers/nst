@@ -10,35 +10,52 @@ window {
 }
 
 .nst-panel {
-    background-color: rgba(26,27,38,.96);
+    background-color: transparent;
     color: #c0caf5;
     border: 1px solid rgba(122,162,247,.30);
     border-radius: 9px;
     font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
     box-shadow: 0 0 30px rgba(122,162,247,.12), 0 6px 26px rgba(0,0,0,.6);
-    background-image: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        transparent 3px,
-        rgba(122,162,247,.025) 3px,
-        rgba(122,162,247,.025) 4px
-    );
+    background-image: none;
     margin: 0;
     padding: 0;
+}
+
+
+.nst-title-row {
+    spacing: 6px;
+}
+
+.nst-status-dot {
+    min-width: 7px;
+    min-height: 7px;
+    margin-right: 6px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    border-radius: 999px;
+    background-color: #9ece6a;
+}
+
+.nst-wifi-icon {
+    font-size: 12px;
+    color: #7dcfff;
+    margin-right: 6px;
 }
 
 .nst-title {
     font-size: 11px;
     color: #a9b1d6;
+    margin-right: 8px;
 }
 
 .nst-verdict-chip {
     font-size: 10.5px;
     padding: 2px 8px;
     border-radius: 5px;
-    background-color: rgba(224,175,104,.14);
-    border: 1px solid rgba(224,175,104,.35);
+    background-color: rgba(224,175,104,.10);
+    border: 1px solid rgba(224,175,104,.30);
     color: #e0af68;
+    margin-left: 8px;
 }
 .nst-verdict-chip.ok,
 .nst-verdict-chip.good,
@@ -66,12 +83,12 @@ window {
 .nst-verdict-bad { color: #f7768e; }
 
 .nst-tile {
-    background-color: rgba(122,162,247,.05);
+    background-color: transparent;
     color: #c0caf5;
-    border: 1px solid rgba(122,162,247,.08);
+    border: 1px solid rgba(122,162,247,.12);
     border-radius: 7px;
     padding: 7px 8px 8px;
-    background-image: linear-gradient(180deg, rgba(122,162,247,.06) 0%, transparent 60%);
+    background-image: none;
     margin: 0;
 }
 
@@ -121,7 +138,8 @@ window {
     min-height: 16px;
     margin: 3px 0 4px;
     border-radius: 2px;
-    background-color: rgba(122,162,247,.06);
+    background-color: rgba(122,162,247,.04);
+    overflow: hidden;
 }
 
 .nst-bar {

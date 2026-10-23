@@ -112,7 +112,7 @@ class NetworkPanel(Gtk.Window):
         self.heartbeat_box = self.heartbeat
 
         # Title row: status dot, Wi-Fi icon, SSID title, verdict chip.
-        self.title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
+        self.title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         try:
             self.title_row.add_css_class("nst-title-row")
         except Exception:
@@ -122,12 +122,16 @@ class NetworkPanel(Gtk.Window):
         try:
             self.status_dot.add_css_class("nst-status-dot")
             self.status_dot.set_size_request(7, 7)
+            self.status_dot.set_margin_end(6)
+            self.status_dot.set_margin_top(2)
+            self.status_dot.set_margin_bottom(2)
         except Exception:
             pass
 
         self.wifi_icon = Gtk.Label(label="\uf1eb")
         try:
             self.wifi_icon.add_css_class("nst-wifi-icon")
+            self.wifi_icon.set_margin_end(6)
         except Exception:
             pass
 
@@ -136,12 +140,14 @@ class NetworkPanel(Gtk.Window):
             self.title_label.add_css_class("nst-title")
             self.title_label.set_xalign(0.0)
             self.title_label.set_hexpand(True)
+            self.title_label.set_margin_end(8)
         except Exception:
             pass
 
         self.verdict_label = Gtk.Label(label="\u2014")
         try:
             self.verdict_label.add_css_class("nst-verdict-chip")
+            self.verdict_label.set_margin_start(8)
         except Exception:
             pass
 
