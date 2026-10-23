@@ -49,6 +49,13 @@ breakdown of where the bottleneck is (local Wi-Fi vs. upstream ISP).
 - TOML config, systemd user unit autostart
 - rpm-ostree for layering gtk4-layer-shell (no reboot for additions)
 
+## Notes
+
+- Signal strength thresholds: the UI marks signal as good at >= -67 dBm and warn at
+  >= -75 dBm, while the verdict engine treats only < -75 dBm as radio-degraded
+  (so the -67..-75 dBm band is a display-level warning that does not by itself
+  change the verdict).
+
 ## Project structure
 
 ```
