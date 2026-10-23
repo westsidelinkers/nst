@@ -6,9 +6,11 @@ import logging
 # Keep a guarded fallback so the module stays importable without the library.
 _LAYER_SHELL_AVAILABLE = False
 try:
-    from ctypes import CDLL
+    from ctypes import CDLL, RTLD_GLOBAL
 
-    CDLL("libgtk4-layer-shell.so.0")
+    # RTLD_GLOBAL is required so gtk4-layer-shell can interpose the
+    # Wayland symbols before GTK/GDK loads libwayland-client.
+    CDLL("libgtk4-layer-shell.so.0", mode=RTLD_GLOBAL)
     _LAYER_SHELL_AVAILABLE = True
 except Exception:  # pragma: no cover - environment dependent
     _LAYER_SHELL_AVAILABLE = False
