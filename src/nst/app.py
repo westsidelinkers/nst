@@ -432,6 +432,16 @@ class NstApplication(Gtk.Application):
         self._last_has_bufferbloat = has_bufferbloat
 
         self._last_sample = sample
+        try:
+            logger.debug(
+                "T0 sample disk: total=%s used=%s free=%s pct=%s",
+                getattr(sample, "disk_total_bytes", None),
+                getattr(sample, "disk_used_bytes", None),
+                getattr(sample, "disk_free_bytes", None),
+                getattr(sample, "disk_free_pct", None),
+            )
+        except Exception:
+            pass
 
         # Update panel.
         if self.panel is not None:
@@ -443,10 +453,12 @@ class NstApplication(Gtk.Application):
                     devices=self.devices,
                     modules=self.modules,
                 )
-            except Exception:
+            except Exception as exc:
+                logger.debug("Keyword panel.update failed: %s", exc)
                 try:
                     self.panel.update(sample, self.verdict, self.probe_result, self.devices)
-                except Exception:
+                except Exception as exc2:
+                    logger.debug("Positional panel.update failed: %s", exc2)
                     pass
 
         # Heartbeat update (expanded panel handles via panel.update, but ensure).
