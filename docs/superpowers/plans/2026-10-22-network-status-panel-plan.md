@@ -1175,3 +1175,97 @@ Expected: Panel appears bottom-left, shows tiles, heartbeat graph scrolls, bars 
 git add -A
 git commit -m "feat: integration and polish — working panel"
 ```
+## Version Roadmap (post-v1.0.0)
+
+v1.0.0 is frozen. The following are incremental releases with feature, complexity, and cost ratings.
+
+### v1.0.1 — Reliability and alerts
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Notifications (verdict, new device, probe failure, OS update/reboot) | Low | Low |
+| Offline resilience (last good values, last probe time, stale state) | Low–Medium | Low |
+| Diagnostics bundle export (logs, config, last samples) | Low–Medium | Low |
+
+### v1.0.2 — Latency visibility
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Packet loss + jitter trend sparkline (last 5 minutes) | Medium | Low |
+| VoIP MOS estimate from latency/jitter/loss | Low | Low |
+
+### v1.0.3 — DNS and IPv6 path
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| IPv6 status + path MTU / MTU discovery | Medium | Low |
+| DNS resolver benchmark (router vs Quad9/Cloudflare/DoH) with recommended resolver and copy command | Medium | Low–Medium |
+
+### v1.0.4 — Device awareness
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Device discovery improvements (ARP/mDNS names, last-seen) | Medium | Low |
+| New-device alerts | Low–Medium | Low |
+
+### v1.0.5 — History and alerting
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Historical logging/export (CSV/JSON of T0/T1 samples) | Medium | Low |
+| Alert rules engine | Medium | Low |
+
+### v1.0.6 — Comparison and usage
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Comparison mode (home/work, AC/battery, wired/Wi-Fi) | Medium | Low |
+| Per-interface / per-SSID history | Medium | Low |
+| Data-usage quotas and billing-cycle tracking | Medium | Low |
+
+### v1.0.7 — Wi-Fi radio diagnostics
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Wi-Fi channel/interference scan with congestion score and suggested channel/width | Medium–High | Medium |
+| Wi-Fi roaming / signal history | Medium | Low–Medium |
+| Mesh node signal and backhaul quality | Medium–High | Medium |
+
+### v1.0.8 — Connectivity and VPN
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Captive-portal detection | Low | Low |
+| VPN status, handshake age, tunnel latency, kill-switch check | Medium | Low |
+| Proxy/PAC detection and proxy latency | Medium | Low |
+| DNS-over-HTTPS/TLS + DNSSEC status | Medium | Low–Medium |
+
+### v1.0.9 — Local network and path quality
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| Duplicate-IP / ARP conflict detection | Low–Medium | Low |
+| Gateway MAC / router reachability | Low | Low |
+| DHCP lease details | Low | Low |
+| NTP / time-sync offset | Low | Low |
+| MTU black-hole detection and recommended MTU | Medium | Low–Medium |
+| Route trace + ASN/region view | Medium–High | Medium |
+
+### v1.2.0 — Advanced and higher-cost features
+
+| Feature | Complexity | Cost |
+|---|---:|---:|
+| ISP throttling detection (burst vs sustained, time-of-day trends) | Medium | Medium |
+| Local `iperf3` LAN speed test | Medium–High | Medium |
+| Flatpak / systemd health addons (Tier 2) | Medium | Low |
+| Failed systemd units reporting | Medium | Low |
+| Power-profile switching (tuned-ppd) | Medium | Low |
+| GPU busy% / RC6 residency | Medium–High | Medium |
+| Per-device bandwidth via router APIs | High | Medium–High |
+| Per-interface comparison for multi-interface setups | Medium | Low |
+| Ambient starfield / advanced visual layer | High | Medium–High |
+| DNS / WebRTC leak checks | Medium | Low–Medium |
+| IP reputation / blacklist check | Medium | Low–Medium |
+| Firewall / conntrack diagnostics | Medium | Low |
+| Certificate expiry checks | Low–Medium | Low |
+| Multicast / IGMP visibility | Medium | Low |

@@ -12,6 +12,6 @@
 - Disk usage reads the real home filesystem instead of a tiny composefs root.
 - Bars and graph are measurement-driven; no idle/random animation.
 
-## [1.5.0] - Unreleased
+## [1.2.1] - Unreleased
 
 - Future customizations.

@@ -180,7 +180,7 @@ Tier 1 (v1):
 - IPv6 status — link-local only, no WAN IPv6. Honest badge.
 - Devices on network — best-effort ARP neighbor table + mDNS (2 devices: router + 1 Android phone). Labeled "devices seen," not "users on Wi-Fi."
 
-Tier 2 (v2):
+Tier 2 (v1.2.2):
 - Flatpak update count (9 pending, ~1.8 GB)
 - Failed systemd units (1 system failure — benign Atomic quirk)
 - Power profile (tuned-ppd, switchable via D-Bus)

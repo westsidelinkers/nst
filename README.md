@@ -97,13 +97,30 @@ nst/
 
 **v1.0.0 — v1 feature freeze.** The core panel, addons, live trend graph,
 data-driven bars, and systemd autostart are complete. Further
-customizations are reserved for **v1.5**.
+customizations are reserved for **v1.2.1**.
 
 ## Versioning
 
 - **v1.0.0** — frozen v1 feature set.
-- **v1.5** — future customizations; not part of v1.
+- **v1.2.1** — future customizations; not part of v1.
+
+## Roadmap
+
+- **v1.0.0** — Frozen v1 feature set: core panel, addons, live trend graph, data-driven bars, systemd autostart.
+- **v1.0.1** — Notifications, offline resilience, diagnostics bundle export.
+- **v1.0.2** — Packet loss + jitter trend sparkline (last 5 minutes), VoIP MOS estimate.
+- **v1.0.3** — IPv6 status + path MTU / MTU discovery, DNS resolver benchmark.
+- **v1.0.4** — Device discovery improvements, new-device alerts.
+- **v1.0.5** — Historical logging/export (CSV/JSON), alert rules engine.
+- **v1.0.6** — Comparison mode, per-interface / per-SSID history, data-usage quotas.
+- **v1.0.7** — Wi-Fi channel/interference scan, roaming / signal history, mesh node signal.
+- **v1.0.8** — Captive-portal detection, VPN status and tunnel latency, proxy/PAC detection, DNS-over-HTTPS/TLS + DNSSEC status.
+- **v1.0.9** — Duplicate-IP / ARP conflict detection, gateway and DHCP diagnostics, NTP offset, MTU black-hole detection, route trace + ASN/region view.
+- **v1.2.0** — ISP throttling detection, local `iperf3` test, Flatpak/systemd health, failed systemd units, power-profile switching, GPU busy% / RC6, per-device bandwidth, per-interface comparison, ambient starfield, DNS/WebRTC leak checks, IP reputation, firewall/conntrack diagnostics, certificate expiry checks, multicast/IGMP visibility.
+- **v1.2.1** — Future customizations.
+- **v1.2.2** — Tier 2 modules: Flatpak update count, failed systemd units, power profile switching, GPU busy% via RC6 residency.
+
 
 ## License
 
-TBD
+MIT License. See `LICENSE` for details.
