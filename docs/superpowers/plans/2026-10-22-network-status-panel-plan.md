@@ -23,6 +23,17 @@
 - Tokyo Night palette: bg #1a1b26, fg #c0caf5, blue #7aa2f7, cyan #7dcfff, purple #bb9af7, green #9ece6a, yellow #e0af68, red #f7768e, muted #a9b1d6, dim #414868
 - Font: "JetBrainsMono Nerd Font", 12 px
 
+## Decision: Visualization & History Strategy
+
+Grafana was evaluated as a potential core visualization/history backend and rejected for core use: resource and deployment footprint (separate service, heavier memory/CPU, container/systemd dependency) and philosophy mismatch (nst is a glanceable in-panel panel, not a monitoring platform). The chosen local approach:
+
+- Core visualization stays in-panel using Cairo sparklines (heartbeat graph, bars) — no external dependency.
+- Historical logging/export is backed by a local SQLite store at `~/.local/state/nst/history.sqlite`, with CSV/JSON export of T0/T1 samples.
+- Alert rules engine emits desktop notifications via `notify-send`/libnotify (not an in-process scheduler like Grafana's).
+- Optional, off-by-default "metrics export" module (plugin-style, config-gated): writes a Prometheus text-exposition file or JSON snapshot to a known path on each sample, so users who already run Grafana/Prometheus elsewhere can scrape it. Never a hard dependency.
+
+This keeps nst self-contained, low-resource, and aligned with its glanceable-panel philosophy while remaining interoperable with external monitoring stacks on an opt-in basis.
+
 ## Review Focus
 
 Five failure modes the spec implies but no task's tests exercise:
@@ -1175,6 +1186,108 @@ Expected: Panel appears bottom-left, shows tiles, heartbeat graph scrolls, bars 
 git add -A
 git commit -m "feat: integration and polish — working panel"
 ```
+
+---
+
+### Task 15: Local history store (SQLite) + CSV/JSON export + optional metrics exporter
+
+**Files:**
+- Create: `src/nst/history/__init__.py`
+- Create: `src/nst/history/store.py`
+- Create: `src/nst/history/export.py`
+- Create: `src/nst/history/metrics_exporter.py`
+- Create: `tests/test_history.py`
+
+**Interfaces:**
+- Consumes: `T0Sample`, `ProbeResult`, `Config`
+- Produces: `HistoryStore` class with `record_t0(sample)`, `record_probe(result)`, `query(since, until) -> list`, `export_csv(path)`, `export_json(path)`
+- Produces: `MetricsExporter` class (optional, config-gated) with `write(sample)` writing Prometheus text-exposition or JSON snapshot to a known path on each sample
+- Produces: SQLite database at `~/.local/state/nst/history.sqlite`
+
+- [ ] **Step 1: Write the failing test**
+
+```python
+# tests/test_history.py
+from nst.history.store import HistoryStore
+import tempfile, os
+
+def test_history_store_roundtrip():
+    with tempfile.TemporaryDirectory() as d:
+        db = os.path.join(d, "history.sqlite")
+        store = HistoryStore(db)
+        store.record_t0({"timestamp": 1.0, "rx_bps": 100.0, "tx_bps": 50.0})
+        rows = store.query(since=0.0, until=2.0)
+        assert len(rows) == 1
+        assert rows[0]["rx_bps"] == 100.0
+
+def test_history_export_csv():
+    with tempfile.TemporaryDirectory() as d:
+        db = os.path.join(d, "history.sqlite")
+        store = HistoryStore(db)
+        store.record_t0({"timestamp": 1.0, "rx_bps": 100.0, "tx_bps": 50.0})
+        csv_path = os.path.join(d, "out.csv")
+        store.export_csv(csv_path)
+        assert os.path.exists(csv_path)
+
+def test_history_export_json():
+    with tempfile.TemporaryDirectory() as d:
+        db = os.path.join(d, "history.sqlite")
+        store = HistoryStore(db)
+        store.record_t0({"timestamp": 1.0, "rx_bps": 100.0, "tx_bps": 50.0})
+        json_path = os.path.join(d, "out.json")
+        store.export_json(json_path)
+        assert os.path.exists(json_path)
+
+def test_metrics_exporter_disabled_by_default():
+    from nst.history.metrics_exporter import MetricsExporter
+    exp = MetricsExporter(enabled=False)
+    assert exp.enabled is False
+    # write is a no-op when disabled
+    exp.write({"timestamp": 1.0, "rx_bps": 100.0})
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `PYTHONPATH=src python -m pytest tests/test_history.py -v`
+Expected: FAIL with "ModuleNotFoundError"
+
+- [ ] **Step 3: Implement local history store**
+
+Create `src/nst/history/__init__.py` (empty).
+Create `src/nst/history/store.py` with `HistoryStore`:
+- SQLite database at given path; create schema for `t0_samples` and `probe_results` tables on init
+- `record_t0(sample)` — inserts a row (timestamp, rx_bps, tx_bps, ping_avg_ms, signal_dbm, ...)
+- `record_probe(result)` — inserts probe result row
+- `query(since, until)` — returns list of dicts filtered by timestamp range
+- `export_csv(path)` — writes all samples to CSV
+- `export_json(path)` — writes all samples to JSON
+
+Create `src/nst/history/export.py` with CSV/JSON serialization helpers.
+
+Create `src/nst/history/metrics_exporter.py` with `MetricsExporter`:
+- Config-gated (`enabled` flag, default False)
+- `write(sample)` — no-op when disabled; otherwise writes Prometheus text-exposition or JSON snapshot to a known path (e.g. `~/.local/state/nst/metrics.prom` or `metrics.json`)
+- Never a hard dependency: importable and usable even when disabled
+
+Key implementation details:
+- Use stdlib `sqlite3`; no external DB dependency
+- Schema includes timestamp (REAL) and all T0/T1 fields
+- Thread-safe access via lock
+- Export paths configurable; defaults under state dir
+- Metrics exporter path configurable via config; off-by-default
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `PYTHONPATH=src python -m pytest tests/test_history.py -v`
+Expected: PASS (4 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/nst/history/ tests/test_history.py
+git commit -m "feat: local SQLite history store with CSV/JSON export and optional metrics exporter"
+```
+
 ## Version Roadmap (post-v1.0.0)
 
 v1.0.0 is frozen. The following are incremental releases with feature, complexity, and cost ratings.
@@ -1183,7 +1296,7 @@ v1.0.0 is frozen. The following are incremental releases with feature, complexit
 
 | Feature | Complexity | Cost |
 |---|---:|---:|
-| Notifications (verdict, new device, probe failure, OS update/reboot) | Low | Low |
+| Notifications (verdict, new device, probe failure, OS update/reboot) via notify-send/libnotify | Low | Low |
 | Offline resilience (last good values, last probe time, stale state) | Low–Medium | Low |
 | Diagnostics bundle export (logs, config, last samples) | Low–Medium | Low |
 
@@ -1212,8 +1325,9 @@ v1.0.0 is frozen. The following are incremental releases with feature, complexit
 
 | Feature | Complexity | Cost |
 |---|---:|---:|
-| Historical logging/export (CSV/JSON of T0/T1 samples) | Medium | Low |
-| Alert rules engine | Medium | Low |
+| Historical logging/export (SQLite backing store at ~/.local/state/nst/history.sqlite) + CSV/JSON export of T0/T1 samples | Medium | Low |
+| Alert rules engine (desktop notifications via notify-send/libnotify) | Medium | Low |
+| Optional metrics export (Prometheus text / JSON snapshot, off-by-default) | Low | Low |
 
 ### v1.0.6 — Comparison and usage
 
